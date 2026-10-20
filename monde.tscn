@@ -1,0 +1,158 @@
+[gd_scene format=3 uid="uid://d3hghoa2avknx"]
+
+[ext_resource type="Script" uid="uid://c22iw17r4bm07" path="res://bateau.gd" id="1_0uhqp"]
+[ext_resource type="PackedScene" uid="uid://des5ytl8dgnhh" path="res://fast_boat_pecheur.glb" id="1_mplmx"]
+[ext_resource type="PackedScene" uid="uid://bpubng702ndrb" path="res://statue_liberte.glb" id="2_statue"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_iewmn"]
+albedo_color = Color(0.050980393, 0.56078434, 0.8, 1)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ocean"]
+size = Vector2(1500, 1500)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_0ngs5"]
+albedo_color = Color(0.9098039, 0.8235294, 0.6039216, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_ileDepart"]
+top_radius = 30.0
+bottom_radius = 31.0
+radial_segments = 48
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_ileDepart"]
+radius = 30.5
+
+[sub_resource type="BoxMesh" id="BoxMesh_ileStatue"]
+size = Vector3(36, 2, 36)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_yeq02"]
+albedo_color = Color(0.6039216, 0.6039216, 0.6039216, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ileStatue"]
+size = Vector3(36, 2, 36)
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_statue"]
+height = 21.0
+radius = 2.6
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_bateau"]
+size = Vector3(2.1, 1, 6.7)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_murNord"]
+size = Vector3(800, 20, 2)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_murRouge"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(1, 0, 0, 0.3)
+
+[sub_resource type="BoxMesh" id="BoxMesh_murNord"]
+size = Vector3(800, 20, 2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_murSud"]
+size = Vector3(800, 20, 2)
+
+[sub_resource type="BoxMesh" id="BoxMesh_murSud"]
+size = Vector3(800, 20, 2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_murOuest"]
+size = Vector3(2, 20, 600)
+
+[sub_resource type="BoxMesh" id="BoxMesh_murOuest"]
+size = Vector3(2, 20, 600)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_murEst"]
+size = Vector3(2, 20, 600)
+
+[sub_resource type="BoxMesh" id="BoxMesh_murEst"]
+size = Vector3(2, 20, 600)
+
+[node name="Monde" type="Node3D" unique_id=1380164241]
+
+[node name="Ocean" type="MeshInstance3D" parent="." unique_id=533748921]
+material_override = SubResource("StandardMaterial3D_iewmn")
+mesh = SubResource("PlaneMesh_ocean")
+
+[node name="IleDepart" type="StaticBody3D" parent="Ocean" unique_id=1411422915]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 170, 0, 100)
+
+[node name="IleMesh" type="MeshInstance3D" parent="Ocean/IleDepart" unique_id=2135691893]
+material_override = SubResource("StandardMaterial3D_0ngs5")
+mesh = SubResource("CylinderMesh_ileDepart")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ocean/IleDepart" unique_id=866938230]
+shape = SubResource("CylinderShape3D_ileDepart")
+
+[node name="IleStatue" type="StaticBody3D" parent="Ocean" unique_id=1334520628]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -190, 0, -110)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ocean/IleStatue" unique_id=1931971307]
+mesh = SubResource("BoxMesh_ileStatue")
+surface_material_override/0 = SubResource("StandardMaterial3D_yeq02")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ocean/IleStatue" unique_id=1339020098]
+shape = SubResource("BoxShape3D_ileStatue")
+
+[node name="StatueLiberte" parent="Ocean/IleStatue" unique_id=1276493058 instance=ExtResource("2_statue")]
+transform = Transform3D(0.540367, 0, 0.841429, 0, 1, 0, -0.841429, 0, 0.540367, 0.336263, 1, -0.449586)
+
+[node name="CollisionStatue" type="CollisionShape3D" parent="Ocean/IleStatue" unique_id=598314762]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11.5, 0)
+shape = SubResource("CylinderShape3D_statue")
+
+[node name="Bateau" type="CharacterBody3D" parent="." unique_id=15158573]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 137, 0, 100)
+script = ExtResource("1_0uhqp")
+
+[node name="Sketchfab_boat" parent="Bateau" unique_id=86934219 instance=ExtResource("1_mplmx")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 0, 0.7, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Bateau" unique_id=420733615]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0.2)
+shape = SubResource("BoxShape3D_bateau")
+
+[node name="CameraPilote" type="Camera3D" parent="Bateau" unique_id=884172236]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3, 0.45)
+current = true
+fov = 100.0
+
+[node name="Limites" type="Node3D" parent="." unique_id=1133275996]
+
+[node name="MurNord" type="StaticBody3D" parent="Limites" unique_id=1855454410]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10, -300)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Limites/MurNord" unique_id=1903873587]
+shape = SubResource("BoxShape3D_murNord")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Limites/MurNord" unique_id=1539140937]
+material_override = SubResource("StandardMaterial3D_murRouge")
+mesh = SubResource("BoxMesh_murNord")
+
+[node name="MurSud" type="StaticBody3D" parent="Limites" unique_id=737871286]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10, 300)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Limites/MurSud" unique_id=470953428]
+shape = SubResource("BoxShape3D_murSud")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Limites/MurSud" unique_id=1092847361]
+material_override = SubResource("StandardMaterial3D_murRouge")
+mesh = SubResource("BoxMesh_murSud")
+
+[node name="MurOuest" type="StaticBody3D" parent="Limites" unique_id=1265005627]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -400, 10, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Limites/MurOuest" unique_id=1787216237]
+shape = SubResource("BoxShape3D_murOuest")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Limites/MurOuest" unique_id=1648203957]
+material_override = SubResource("StandardMaterial3D_murRouge")
+mesh = SubResource("BoxMesh_murOuest")
+
+[node name="MurEst" type="StaticBody3D" parent="Limites" unique_id=1029341468]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 400, 10, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Limites/MurEst" unique_id=869894393]
+shape = SubResource("BoxShape3D_murEst")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Limites/MurEst" unique_id=1739462085]
+material_override = SubResource("StandardMaterial3D_murRouge")
+mesh = SubResource("BoxMesh_murEst")
