@@ -70,4 +70,11 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 128
 text = " Start Game "
 
+[node name="StartClavierSourisButton" type="Button" parent="Control/VBoxContainer" unique_id=1252999708]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 64
+text = " Start clavier souris "
+
 [connection signal="pressed" from="Control/VBoxContainer/StartButton" to="." method="_on_start_button_pressed"]
+[connection signal="pressed" from="Control/VBoxContainer/StartClavierSourisButton" to="." method="_on_start_clavier_souris_button_pressed"]
