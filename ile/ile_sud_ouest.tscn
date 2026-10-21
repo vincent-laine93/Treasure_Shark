@@ -1,0 +1,28 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" uid="uid://c2a0cqq4g4ikw" path="res://iles.glb" id="1_iles"]
+[ext_resource type="Shape3D" path="res://ile/collision_ile_sud_ouest.tres" id="2_collision"]
+[ext_resource type="Script" path="res://ile/ile.gd" id="3_script"]
+
+[node name="IleSudOuest" type="StaticBody3D" groups=["iles"]]
+script = ExtResource("3_script")
+
+[node name="Modele" parent="." instance=ExtResource("1_iles")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.133, 0, -6.421)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = ExtResource("2_collision")
+
+[node name="Ile_SudEst" parent="Modele/Iles" index="1"]
+visible = false
+
+[node name="Ile_Nord" parent="Modele/Iles" index="2"]
+visible = false
+
+[node name="Ile_NordEst" parent="Modele/Iles" index="3"]
+visible = false
+
+[node name="Ile_NordOuest" parent="Modele/Iles" index="4"]
+visible = false
+
+[editable path="Modele"]

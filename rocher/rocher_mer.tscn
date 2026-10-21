@@ -1,0 +1,16 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://rocher/rocher.gd" id="1_rocher"]
+[ext_resource type="PackedScene" uid="uid://cewpoqsjydslc" path="res://rocher/rock_sea_sea_rock.glb" id="2_modele"]
+[ext_resource type="Shape3D" path="res://rocher/collision_rocher_mer.tres" id="3_collision"]
+
+[node name="RocherMer" type="StaticBody3D"]
+script = ExtResource("1_rocher")
+luminance_moyenne = 0.072
+
+[node name="Modele" parent="." instance=ExtResource("2_modele")]
+transform = Transform3D(20, 0, 0, 0, 20, 0, 0, 0, 20, 0.3, -0.4, 0.2)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.0, 0)
+shape = ExtResource("3_collision")

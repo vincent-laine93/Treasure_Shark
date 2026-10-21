@@ -1,0 +1,18 @@
+[gd_scene format=3 uid="uid://c20282qrojhmr"]
+
+[ext_resource type="PackedScene" uid="uid://cdg6gq1v2s1fn" path="res://requin.glb" id="1_0ptgo"]
+[ext_resource type="Script" uid="uid://dwp48qihi3but" path="res://deplacement.gd" id="2_npe8j"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_morsure"]
+size = Vector3(2.6, 2.2, 6)
+
+[node name="Requin" type="Node3D" unique_id=1902026753]
+script = ExtResource("2_npe8j")
+
+[node name="Modele" parent="." unique_id=623335858 instance=ExtResource("1_0ptgo")]
+
+[node name="Morsure" type="Area3D" parent="." unique_id=623335860]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Morsure" unique_id=623335861]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+shape = SubResource("BoxShape3D_morsure")

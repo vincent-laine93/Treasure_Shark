@@ -1,0 +1,16 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://rocher/rocher.gd" id="1_rocher"]
+[ext_resource type="PackedScene" uid="uid://cmkbbp5rwysdt" path="res://rocher/petroglyph_j6_khatm_al_melaha_kalba_sharjah.glb" id="2_modele"]
+[ext_resource type="Shape3D" path="res://rocher/collision_rocher_petroglyphe.tres" id="3_collision"]
+
+[node name="RocherPetroglyphe" type="StaticBody3D"]
+script = ExtResource("1_rocher")
+luminance_moyenne = 0.108
+
+[node name="Modele" parent="." instance=ExtResource("2_modele")]
+transform = Transform3D(6, 0, 0, 0, 6, 0, 0, 0, 6, 1.41, -4.48, -0.06)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.0, 0)
+shape = ExtResource("3_collision")

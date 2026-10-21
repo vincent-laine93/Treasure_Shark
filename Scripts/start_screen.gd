@@ -1,36 +1,38 @@
 extends Node
-# Called when the node enters the scene tree for the first time.
+
 @onready var fade_overlay = %FadeOverlay
 @onready var StatusDot = %StatusDot
 @onready var StatusLabel = %StatusLabel
 @onready var StartButton = %StartButton
 
 func _ready() -> void:
-	ArduinoManager.arduino_connected.connect(_on_arduino_connected)
-	ArduinoManager.arduino_disconnected.connect(_on_arduino_disconnected)
-	
-	StatusDot.modulate = Color.RED
-	StatusLabel.text = "Arduino Pas Connectée"
-	StartButton.disabled = true
+	SerialManager.connecte.connect(_on_arduino_connected)
+	SerialManager.deconnecte.connect(_on_arduino_disconnected)
 
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta: float) -> void:
-	pass
-	
+	if SerialManager.est_connecte:
+		_on_arduino_connected()
+	else:
+		StatusDot.modulate = Color.RED
+		StatusLabel.text = "Arduino Pas Connectée"
+		StartButton.disabled = true
+
 func _on_arduino_connected():
 	StatusDot.modulate = Color.GREEN
 	StatusLabel.text = "Arduino Connecté"
 	StartButton.disabled = false
-	
+
 func _on_arduino_disconnected():
 	StatusDot.modulate = Color.RED
 	StatusLabel.text = "Déconnecté"
 	StartButton.disabled = true
 
+# même jeu, mais avec la manette
 func _on_start_button_pressed() -> void:
+	SerialManager.manette_active = true
 	fade_overlay.modulate.a = 1
-	get_tree().change_scene_to_file("res://Scenes/Game.tscn")
+	get_tree().change_scene_to_file("res://monde.tscn")
 
 func _on_start_clavier_souris_button_pressed() -> void:
+	SerialManager.manette_active = false
 	fade_overlay.modulate.a = 1
 	get_tree().change_scene_to_file("res://monde.tscn")

@@ -2,7 +2,23 @@
 
 [ext_resource type="Script" uid="uid://c22iw17r4bm07" path="res://bateau.gd" id="1_0uhqp"]
 [ext_resource type="PackedScene" uid="uid://des5ytl8dgnhh" path="res://fast_boat_pecheur.glb" id="1_mplmx"]
+[ext_resource type="Shader" uid="uid://dna41shy8ljx2" path="res://eau.gdshader" id="1_x83hs"]
 [ext_resource type="PackedScene" uid="uid://bpubng702ndrb" path="res://statue_liberte.glb" id="2_statue"]
+[ext_resource type="Script" uid="uid://dqf5mjtr18b7g" path="res://joueur.gd" id="3_joueur"]
+[ext_resource type="Script" uid="uid://5n6nee5v4ud0" path="res://recommencer.gd" id="4_recommencer"]
+[ext_resource type="Script" uid="uid://cr0iw53h3nhg7" path="res://coffres.gd" id="5_coffres"]
+[ext_resource type="PackedScene" path="res://coffre.tscn" id="6_coffre"]
+[ext_resource type="PackedScene" path="res://cabane.tscn" id="17_cabane"]
+[ext_resource type="PackedScene" uid="uid://c20282qrojhmr" path="res://requin.tscn" id="13_tn4qm"]
+[ext_resource type="PackedScene" uid="uid://t4fnr6p1k8sr" path="res://gilet_statue.glb" id="14_gilet"]
+[ext_resource type="PackedScene" path="res://ile/ile_nord.tscn" id="ile_nord"]
+[ext_resource type="PackedScene" path="res://ile/ile_nord_est.tscn" id="ile_nord_est"]
+[ext_resource type="PackedScene" path="res://ile/ile_sud_est.tscn" id="ile_sud_est"]
+[ext_resource type="PackedScene" path="res://ile/ile_sud_ouest.tscn" id="ile_sud_ouest"]
+[ext_resource type="PackedScene" path="res://rocher/rocher_mer.tscn" id="rocher_mer"]
+[ext_resource type="PackedScene" path="res://rocher/rocher_petroglyphe.tscn" id="rocher_petroglyphe"]
+[ext_resource type="PackedScene" path="res://rocher/rocher_plage.tscn" id="rocher_plage"]
+[ext_resource type="PackedScene" path="res://rocher/rocher_rotheneuf.tscn" id="rocher_rotheneuf"]
 
 [sub_resource type="Gradient" id="Gradient_ckny6"]
 
@@ -31,22 +47,48 @@ background_mode = 2
 sky = SubResource("Sky_nwp2t")
 glow_enabled = true
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_iewmn"]
-albedo_color = Color(0.050980393, 0.56078434, 0.8, 1)
-
 [sub_resource type="PlaneMesh" id="PlaneMesh_ocean"]
 size = Vector2(1500, 1500)
+subdivide_width = 600
+subdivide_depth = 600
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_0ngs5"]
-albedo_color = Color(0.9098039, 0.8235294, 0.6039216, 1)
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_ecume"]
+seed = 12
+frequency = 0.03
 
-[sub_resource type="CylinderMesh" id="CylinderMesh_ileDepart"]
-top_radius = 30.0
-bottom_radius = 31.0
-radial_segments = 48
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_ecume"]
+noise = SubResource("FastNoiseLite_ecume")
+seamless = true
 
-[sub_resource type="CylinderShape3D" id="CylinderShape3D_ileDepart"]
-radius = 30.5
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_tn4qm"]
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_x83hs"]
+noise = SubResource("FastNoiseLite_tn4qm")
+seamless = true
+as_normal_map = true
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_h4ouq"]
+seed = 5
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_g817v"]
+noise = SubResource("FastNoiseLite_h4ouq")
+seamless = true
+as_normal_map = true
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_vxpn7"]
+render_priority = 0
+shader = ExtResource("1_x83hs")
+shader_parameter/couleur_profonde = Color(0.02, 0.2, 0.38, 1)
+shader_parameter/couleur_claire = Color(0.05, 0.55, 0.65, 1)
+shader_parameter/couleur_ciel = Color(0.65, 0.85, 1, 1)
+shader_parameter/couleur_ecume = Color(0.95, 0.97, 1, 1)
+shader_parameter/hauteur_vagues = 0.2
+shader_parameter/vitesse = 1.0
+shader_parameter/ecume = 0.6
+shader_parameter/position_bateau = Vector3(0, 0, 0)
+shader_parameter/normale1 = SubResource("NoiseTexture2D_x83hs")
+shader_parameter/normale2 = SubResource("NoiseTexture2D_g817v")
+shader_parameter/bruit_ecume = SubResource("NoiseTexture2D_ecume")
 
 [sub_resource type="BoxMesh" id="BoxMesh_ileStatue"]
 size = Vector3(36, 2, 36)
@@ -63,6 +105,25 @@ radius = 2.6
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_bateau"]
 size = Vector3(2.1, 1, 6.7)
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_joueur"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_bois"]
+albedo_color = Color(0.55, 0.36, 0.2, 1)
+roughness = 0.9
+
+[sub_resource type="BoxMesh" id="BoxMesh_pont"]
+size = Vector3(4.3, 0.15, 1.6)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_pont"]
+size = Vector3(4.3, 0.15, 1.6)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_poteau"]
+top_radius = 0.1
+bottom_radius = 0.1
+radial_segments = 12
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_murNord"]
 size = Vector3(800, 20, 2)
@@ -104,20 +165,22 @@ light_angular_distance = 3.0
 shadow_enabled = true
 
 [node name="Ocean" type="MeshInstance3D" parent="." unique_id=533748921]
-material_override = SubResource("StandardMaterial3D_iewmn")
 mesh = SubResource("PlaneMesh_ocean")
+surface_material_override/0 = SubResource("ShaderMaterial_vxpn7")
 
-[node name="IleDepart" type="StaticBody3D" parent="Ocean" unique_id=1411422915]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 170, 0, 100)
+[node name="IleDepart" parent="Ocean" unique_id=1411422915 instance=ExtResource("ile_sud_ouest")]
+transform = Transform3D(3.5, 0, 0, 0, 3.5, 0, 0, 0, 3.5, 170, 0.6, 100)
 
-[node name="IleMesh" type="MeshInstance3D" parent="Ocean/IleDepart" unique_id=2135691893]
-material_override = SubResource("StandardMaterial3D_0ngs5")
-mesh = SubResource("CylinderMesh_ileDepart")
+[node name="IleCoinNord" parent="Ocean" unique_id=1411422920 instance=ExtResource("ile_nord")]
+transform = Transform3D(2.5, 0, 0, 0, 2.5, 0, 0, 0, 2.5, 245, 0.8, 182)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Ocean/IleDepart" unique_id=866938230]
-shape = SubResource("CylinderShape3D_ileDepart")
+[node name="IleCoinSudEst" parent="Ocean" unique_id=1411422921 instance=ExtResource("ile_sud_est")]
+transform = Transform3D(2.5, 0, 0, 0, 2.5, 0, 0, 0, 2.5, 312, 0.8, 248)
 
-[node name="IleStatue" type="StaticBody3D" parent="Ocean" unique_id=1334520628]
+[node name="IleCoinNordEst" parent="Ocean" unique_id=1411422922 instance=ExtResource("ile_nord_est")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 345, 0.8, 150)
+
+[node name="IleStatue" type="StaticBody3D" parent="Ocean" unique_id=1334520628 groups=["iles"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -190, 0, -110)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Ocean/IleStatue" unique_id=1931971307]
@@ -130,12 +193,19 @@ shape = SubResource("BoxShape3D_ileStatue")
 [node name="StatueLiberte" parent="Ocean/IleStatue" unique_id=1276493058 instance=ExtResource("2_statue")]
 transform = Transform3D(0.540367, 0, 0.841429, 0, 1, 0, -0.841429, 0, 0.540367, 0.336263, 1, -0.449586)
 
+[node name="GiletStatue" type="Node3D" parent="Ocean/IleStatue/StatueLiberte" unique_id=1276493060]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.4, 12.45, -0.17)
+visible = false
+
+[node name="Modele" parent="Ocean/IleStatue/StatueLiberte/GiletStatue" unique_id=1276493061 instance=ExtResource("14_gilet")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.4, -12.45, 0.17)
+
 [node name="CollisionStatue" type="CollisionShape3D" parent="Ocean/IleStatue" unique_id=598314762]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 11.5, 0)
 shape = SubResource("CylinderShape3D_statue")
 
 [node name="Bateau" type="CharacterBody3D" parent="." unique_id=15158573]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 137, 0, 100)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 133, 0, 100)
 script = ExtResource("1_0uhqp")
 
 [node name="Sketchfab_boat" parent="Bateau" unique_id=86934219 instance=ExtResource("1_mplmx")]
@@ -147,8 +217,236 @@ shape = SubResource("BoxShape3D_bateau")
 
 [node name="CameraPilote" type="Camera3D" parent="Bateau" unique_id=884172236]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3, 0.45)
-current = true
 fov = 100.0
+
+[node name="Joueur" type="CharacterBody3D" parent="." unique_id=1904417263 node_paths=PackedStringArray("bateau")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 145, 2.75, 118.8)
+script = ExtResource("3_joueur")
+bateau = NodePath("../Bateau")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Joueur" unique_id=1904417264]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_joueur")
+
+[node name="Camera" type="Camera3D" parent="Joueur" unique_id=1904417265]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.65, 0)
+current = true
+fov = 80.0
+
+[node name="Pont" type="StaticBody3D" parent="." unique_id=1904417270 groups=["iles"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 136.35, 0.625, 100)
+
+[node name="Planches" type="MeshInstance3D" parent="Pont" unique_id=1904417271]
+material_override = SubResource("StandardMaterial3D_bois")
+mesh = SubResource("BoxMesh_pont")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Pont" unique_id=1904417272]
+shape = SubResource("BoxShape3D_pont")
+
+[node name="PoteauAvant" type="MeshInstance3D" parent="Pont" unique_id=1904417273]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.95, -1, -0.7)
+material_override = SubResource("StandardMaterial3D_bois")
+mesh = SubResource("CylinderMesh_poteau")
+
+[node name="PoteauArriere" type="MeshInstance3D" parent="Pont" unique_id=1904417274]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.95, -1, 0.7)
+material_override = SubResource("StandardMaterial3D_bois")
+mesh = SubResource("CylinderMesh_poteau")
+
+[node name="Cabane" parent="." unique_id=1904417400 instance=ExtResource("17_cabane")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 145, 2.65, 118)
+
+[node name="CoffreIle" parent="." unique_id=1904417401 instance=ExtResource("6_coffre")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 152, 2.82, 81)
+contenu = "Jerrican"
+sur_terre = true
+
+[node name="Coffres" type="Node3D" parent="." unique_id=1904417290]
+script = ExtResource("5_coffres")
+
+[node name="Coffre1" parent="Coffres" unique_id=1904417291 instance=ExtResource("6_coffre")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -37, -0.3, 241.3)
+
+[node name="Coffre2" parent="Coffres" unique_id=1904417292 instance=ExtResource("6_coffre")]
+transform = Transform3D(0.7071068, 0, 0.7071068, 0, 1, 0, -0.7071068, 0, 0.7071068, -40, -0.3, -200)
+
+[node name="Coffre3" parent="Coffres" unique_id=1904417293 instance=ExtResource("6_coffre")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -250, -0.3, 120)
+
+[node name="Rochers" type="Node3D" parent="." unique_id=1904417300]
+
+[node name="Rocher1" parent="Rochers" unique_id=1904417301 instance=ExtResource("rocher_plage")]
+transform = Transform3D(-0.1122345, 0, -0.9433469, 0, 0.95, 0, 0.9433469, 0, -0.1122345, 335.6, 0, 71.8)
+
+[node name="Rocher2" parent="Rochers" unique_id=1904417302 instance=ExtResource("rocher_rotheneuf")]
+transform = Transform3D(-1.0059654, 0, -0.53631496, 0, 1.14, 0, 0.53631496, 0, -1.0059654, 62.2, 0, -241)
+
+[node name="Rocher3" parent="Rochers" unique_id=1904417303 instance=ExtResource("rocher_petroglyphe")]
+transform = Transform3D(-1.0929859, 0, 0.3885638, 0, 1.16, 0, -0.3885638, 0, -1.0929859, -209.2, 0, 31.2)
+
+[node name="Rocher4" parent="Rochers" unique_id=1904417304 instance=ExtResource("rocher_rotheneuf")]
+transform = Transform3D(0.7357469, 0, -0.6321206, 0, 0.97, 0, 0.6321206, 0, 0.7357469, -275.1, 0, -44.5)
+
+[node name="Rocher5" parent="Rochers" unique_id=1904417305 instance=ExtResource("rocher_mer")]
+transform = Transform3D(0.912646, 0, -0.35703954, 0, 0.98, 0, 0.35703954, 0, 0.912646, 30.5, 0, 39)
+
+[node name="Rocher6" parent="Rochers" unique_id=1904417306 instance=ExtResource("rocher_rotheneuf")]
+transform = Transform3D(-0.8051587, 0, -0.67395806, 0, 1.05, 0, 0.67395806, 0, -0.8051587, -297.7, 0, 39.2)
+
+[node name="Rocher7" parent="Rochers" unique_id=1904417307 instance=ExtResource("rocher_petroglyphe")]
+transform = Transform3D(0.18655133, 0, 0.9213027, 0, 0.94, 0, -0.9213027, 0, 0.18655133, -234.1, 0, -221.4)
+
+[node name="Rocher8" parent="Rochers" unique_id=1904417308 instance=ExtResource("rocher_petroglyphe")]
+transform = Transform3D(-0.073075205, 0, -0.99732643, 0, 1, 0, 0.99732643, 0, -0.073075205, 159.1, 0, 35.4)
+
+[node name="Rocher9" parent="Rochers" unique_id=1904417309 instance=ExtResource("rocher_plage")]
+transform = Transform3D(0.90980655, 0, -0.52416795, 0, 1.05, 0, 0.52416795, 0, 0.90980655, 89.3, 0, -2)
+
+[node name="Rocher10" parent="Rochers" unique_id=1904417310 instance=ExtResource("rocher_petroglyphe")]
+transform = Transform3D(0.50159544, 0, 0.8651023, 0, 1, 0, -0.8651023, 0, 0.50159544, 23.8, 0, 152.5)
+
+[node name="Rocher11" parent="Rochers" unique_id=1904417311 instance=ExtResource("rocher_rotheneuf")]
+transform = Transform3D(-0.1513704, 0, 0.8567304, 0, 0.87, 0, -0.8567304, 0, -0.1513704, -25.8, 0, 232.9)
+
+[node name="Rocher12" parent="Rochers" unique_id=1904417312 instance=ExtResource("rocher_rotheneuf")]
+transform = Transform3D(-0.978706, 0, 0.4566558, 0, 1.08, 0, -0.4566558, 0, -0.978706, -103.8, 0, -138.4)
+
+[node name="Rocher13" parent="Rochers" unique_id=1904417313 instance=ExtResource("rocher_mer")]
+transform = Transform3D(-0.34902492, 0, -1.2418863, 0, 1.29, 0, 1.2418863, 0, -0.34902492, -240.2, 0, 153.9)
+
+[node name="Rocher14" parent="Rochers" unique_id=1904417314 instance=ExtResource("rocher_plage")]
+transform = Transform3D(-0.4060989, 0, -0.90287524, 0, 0.99, 0, 0.90287524, 0, -0.4060989, -313.6, 0, -109.9)
+
+[node name="Rocher15" parent="Rochers" unique_id=1904417315 instance=ExtResource("rocher_mer")]
+transform = Transform3D(0.101325795, 0, 0.83386636, 0, 0.84, 0, -0.83386636, 0, 0.101325795, -3.7, 0, -86.1)
+
+[node name="Rocher16" parent="Rochers" unique_id=1904417316 instance=ExtResource("rocher_mer")]
+transform = Transform3D(0.65671396, 0, 0.9195797, 0, 1.13, 0, -0.9195797, 0, 0.65671396, -38.4, 0, 59.9)
+
+[node name="Rocher17" parent="Rochers" unique_id=1904417317 instance=ExtResource("rocher_plage")]
+transform = Transform3D(1.2165009, 0, 0.09233403, 0, 1.22, 0, -0.09233403, 0, 1.2165009, 325, 0, -43.1)
+
+[node name="Rocher18" parent="Rochers" unique_id=1904417318 instance=ExtResource("rocher_plage")]
+transform = Transform3D(0.38770235, 0, 0.8563217, 0, 0.94, 0, -0.8563217, 0, 0.38770235, 346.5, 0, -232.3)
+
+[node name="Rocher19" parent="Rochers" unique_id=1904417319 instance=ExtResource("rocher_plage")]
+transform = Transform3D(0.65223545, 0, 0.8482269, 0, 1.07, 0, -0.8482269, 0, 0.65223545, 238.8, 0, -87.9)
+
+[node name="Rocher20" parent="Rochers" unique_id=1904417320 instance=ExtResource("rocher_mer")]
+transform = Transform3D(-0.7404287, 0, -0.6110363, 0, 0.96, 0, 0.6110363, 0, -0.7404287, -112.4, 0, -1.8)
+
+[node name="Rocher21" parent="Rochers" unique_id=1904417321 instance=ExtResource("rocher_plage")]
+transform = Transform3D(0.8670864, 0, 0.8723882, 0, 1.23, 0, -0.8723882, 0, 0.8670864, 222.7, 0, -237.2)
+
+[node name="Rocher22" parent="Rochers" unique_id=1904417322 instance=ExtResource("rocher_mer")]
+transform = Transform3D(1.0751858, 0, -0.34767148, 0, 1.13, 0, 0.34767148, 0, 1.0751858, 147.8, 0, -239.3)
+
+[node name="Rocher23" parent="Rochers" unique_id=1904417323 instance=ExtResource("rocher_plage")]
+transform = Transform3D(0.90106726, 0, 0.63093406, 0, 1.1, 0, -0.63093406, 0, 0.90106726, 70, 0, 150)
+
+[node name="Rocher24" parent="Rochers" unique_id=1904417324 instance=ExtResource("rocher_mer")]
+transform = Transform3D(-0.5, 0, 0.8660254, 0, 1, 0, -0.8660254, 0, -0.5, 0, 0, 108)
+
+[node name="Rocher25" parent="Rochers" unique_id=1904417325 instance=ExtResource("rocher_rotheneuf")]
+transform = Transform3D(-0.9396926, 0, -0.34202015, 0, 1, 0, 0.34202015, 0, -0.9396926, -100, 0, 95)
+
+[node name="Rocher26" parent="Rochers" unique_id=1904417326 instance=ExtResource("rocher_mer")]
+transform = Transform3D(0.39332315, 0, 1.0806465, 0, 1.15, 0, -1.0806465, 0, 0.39332315, 40, 0, -45)
+
+[node name="Rocher27" parent="Rochers" unique_id=1904417327 instance=ExtResource("rocher_plage")]
+transform = Transform3D(0.5, 0, -0.8660254, 0, 1, 0, 0.8660254, 0, 0.5, -140, 0, -50)
+
+[node name="Rocher28" parent="Rochers" unique_id=1904417328 instance=ExtResource("rocher_petroglyphe")]
+transform = Transform3D(-1.0336618, 0, 0.37622216, 0, 1.1, 0, -0.37622216, 0, -1.0336618, 180, 0, -150)
+
+[node name="Requins" type="Node3D" parent="." unique_id=1902026800]
+
+[node name="RequinCoffre1" parent="Requins" unique_id=1902026801 instance=ExtResource("13_tn4qm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -60, -0.3, 205)
+distance = 65.0
+vitesse = 5.0
+
+[node name="RequinCoffre2" parent="Requins" unique_id=1902026802 instance=ExtResource("13_tn4qm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -65, -0.3, -185)
+distance = 50.0
+vitesse = 4.5
+
+[node name="RequinCoffre3" parent="Requins" unique_id=1902026803 instance=ExtResource("13_tn4qm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -228, -0.3, 85)
+distance = 45.0
+vitesse = 4.5
+direction = Vector3(0, 0, 1)
+
+[node name="RequinStatue" parent="Requins" unique_id=1902026804 instance=ExtResource("13_tn4qm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -150, -0.3, -145)
+distance = 70.0
+vitesse = 5.0
+direction = Vector3(0, 0, 1)
+
+[node name="RequinCentre" parent="Requins" unique_id=1902026805 instance=ExtResource("13_tn4qm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -60, -0.3, -40)
+distance = 60.0
+vitesse = 5.5
+direction = Vector3(1, 0, 1)
+
+[node name="RequinRouteCoffre" parent="Requins" unique_id=1902026806 instance=ExtResource("13_tn4qm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 85, -0.3, 105)
+distance = 40.0
+direction = Vector3(0.6, 0, 1)
+
+[node name="RequinEst" parent="Requins" unique_id=1902026807 instance=ExtResource("13_tn4qm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 200, -0.3, 20)
+distance = 50.0
+vitesse = 5.0
+direction = Vector3(0, 0, -1)
+
+[node name="RequinNord" parent="Requins" unique_id=1902026808 instance=ExtResource("13_tn4qm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 80, -0.3, -150)
+distance = 55.0
+vitesse = 5.0
+direction = Vector3(-1, 0, 0)
+
+[node name="RequinNordEst" parent="Requins" unique_id=1902026809 instance=ExtResource("13_tn4qm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 280, -0.3, -160)
+distance = 60.0
+vitesse = 6.0
+direction = Vector3(0, 0, 1)
+
+[node name="RequinOuest" parent="Requins" unique_id=1902026810 instance=ExtResource("13_tn4qm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -330, -0.3, -10)
+distance = 50.0
+vitesse = 5.0
+direction = Vector3(0, 0, -1)
+
+[node name="RequinSudOuest" parent="Requins" unique_id=1902026811 instance=ExtResource("13_tn4qm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -150, -0.3, 200)
+distance = 60.0
+vitesse = 5.5
+
+[node name="RequinSud" parent="Requins" unique_id=1902026812 instance=ExtResource("13_tn4qm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 100, -0.3, 230)
+distance = 60.0
+vitesse = 6.0
+
+[node name="RequinRouteOuest" parent="Requins" unique_id=1902026813 instance=ExtResource("13_tn4qm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -70, -0.3, 120)
+distance = 50.0
+vitesse = 5.5
+direction = Vector3(0, 0, 1)
+
+[node name="RequinRouteNord" parent="Requins" unique_id=1902026814 instance=ExtResource("13_tn4qm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, -0.3, -110)
+distance = 50.0
+vitesse = 5.0
+
+[node name="RequinNordOuest" parent="Requins" unique_id=1902026815 instance=ExtResource("13_tn4qm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -250, -0.3, -150)
+distance = 50.0
+vitesse = 5.5
+direction = Vector3(0, 0, 1)
+
+[node name="Recommencer" type="CanvasLayer" parent="." unique_id=1904417280]
+script = ExtResource("4_recommencer")
 
 [node name="Limites" type="Node3D" parent="." unique_id=1133275996]
 
@@ -191,3 +489,6 @@ shape = SubResource("BoxShape3D_murEst")
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Limites/MurEst" unique_id=1739462085]
 material_override = SubResource("StandardMaterial3D_murRouge")
 mesh = SubResource("BoxMesh_murEst")
+
+[node name="Requin" parent="." unique_id=1902026753 instance=ExtResource("13_tn4qm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 137.749, -0.3, 42)

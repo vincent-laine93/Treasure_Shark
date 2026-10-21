@@ -1,0 +1,16 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://rocher/rocher.gd" id="1_rocher"]
+[ext_resource type="PackedScene" uid="uid://bq68k4vcsw00o" path="res://rocher/beach_rock_collection_1.glb" id="2_modele"]
+[ext_resource type="Shape3D" path="res://rocher/collision_rocher_plage.tres" id="3_collision"]
+
+[node name="RocherPlage" type="StaticBody3D"]
+script = ExtResource("1_rocher")
+luminance_moyenne = 0.046
+
+[node name="Modele" parent="." instance=ExtResource("2_modele")]
+transform = Transform3D(4, 0, 0, 0, 4, 0, 0, 0, 4, -5.34, -1.3, 4.38)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.3, 0)
+shape = ExtResource("3_collision")
