@@ -11,6 +11,7 @@ const SHADER := preload("res://rocher/roche.gdshader")
 
 func _ready():
 	add_to_group("rochers")  # le bateau perd une vie s'il tape dedans
+	Sons.ajouter_proximite(self, "rochers")  # les vagues qui se cassent dessus
 	for maillage in find_children("*", "MeshInstance3D", true, false):
 		for i in maillage.mesh.get_surface_count():
 			var ancien = maillage.get_active_material(i)

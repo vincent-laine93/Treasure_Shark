@@ -8,11 +8,12 @@
 [ext_resource type="Script" uid="uid://5n6nee5v4ud0" path="res://recommencer.gd" id="4_recommencer"]
 [ext_resource type="Script" uid="uid://cr0iw53h3nhg7" path="res://coffres.gd" id="5_coffres"]
 [ext_resource type="PackedScene" path="res://coffre.tscn" id="6_coffre"]
-[ext_resource type="PackedScene" path="res://cabane.tscn" id="17_cabane"]
-[ext_resource type="PackedScene" path="res://jerrican.tscn" id="18_jerrican"]
-[ext_resource type="Script" path="res://missions.gd" id="19_missions"]
 [ext_resource type="PackedScene" uid="uid://c20282qrojhmr" path="res://requin.tscn" id="13_tn4qm"]
 [ext_resource type="PackedScene" uid="uid://t4fnr6p1k8sr" path="res://gilet_statue.glb" id="14_gilet"]
+[ext_resource type="PackedScene" path="res://cabane.tscn" id="17_cabane"]
+[ext_resource type="PackedScene" path="res://jerrican.tscn" id="18_jerrican"]
+[ext_resource type="Script" uid="uid://c0o6tsmr8e50q" path="res://missions.gd" id="19_missions"]
+[ext_resource type="Script" path="res://sons.gd" id="20_sons"]
 [ext_resource type="PackedScene" path="res://ile/ile_nord.tscn" id="ile_nord"]
 [ext_resource type="PackedScene" path="res://ile/ile_nord_est.tscn" id="ile_nord_est"]
 [ext_resource type="PackedScene" path="res://ile/ile_sud_est.tscn" id="ile_sud_est"]
@@ -48,6 +49,9 @@ sky_material = SubResource("ProceduralSkyMaterial_peue8")
 background_mode = 2
 sky = SubResource("Sky_nwp2t")
 glow_enabled = true
+fog_enabled = true
+volumetric_fog_enabled = true
+volumetric_fog_albedo = Color(0.7294118, 0.77254903, 0.8, 1)
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_ocean"]
 size = Vector2(1500, 1500)
@@ -88,6 +92,7 @@ shader_parameter/hauteur_vagues = 0.2
 shader_parameter/vitesse = 1.0
 shader_parameter/ecume = 0.6
 shader_parameter/position_bateau = Vector3(0, 0, 0)
+shader_parameter/avant_bateau = Vector2(0, -1)
 shader_parameter/normale1 = SubResource("NoiseTexture2D_x83hs")
 shader_parameter/normale2 = SubResource("NoiseTexture2D_g817v")
 shader_parameter/bruit_ecume = SubResource("NoiseTexture2D_ecume")
@@ -262,6 +267,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 145, 2.65, 118)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 152, 2.82, 81)
 contenu = "Jerrican"
 sur_terre = true
+muet = true
 
 [node name="Coffres" type="Node3D" parent="." unique_id=1904417290]
 script = ExtResource("5_coffres")
@@ -396,52 +402,52 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 85, -0.3, 105)
 distance = 40.0
 direction = Vector3(0.6, 0, 1)
 
-[node name="RequinEst" parent="Requins" unique_id=1902026807 instance=ExtResource("13_tn4qm")]
+[node name="Requin1" parent="Requins" unique_id=1902026807 instance=ExtResource("13_tn4qm")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 200, -0.3, 20)
 distance = 50.0
 vitesse = 5.0
 direction = Vector3(0, 0, -1)
 
-[node name="RequinNord" parent="Requins" unique_id=1902026808 instance=ExtResource("13_tn4qm")]
+[node name="Requin2" parent="Requins" unique_id=1902026808 instance=ExtResource("13_tn4qm")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 80, -0.3, -150)
 distance = 55.0
 vitesse = 5.0
 direction = Vector3(-1, 0, 0)
 
-[node name="RequinNordEst" parent="Requins" unique_id=1902026809 instance=ExtResource("13_tn4qm")]
+[node name="Requin3" parent="Requins" unique_id=1902026809 instance=ExtResource("13_tn4qm")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 280, -0.3, -160)
 distance = 60.0
 vitesse = 6.0
 direction = Vector3(0, 0, 1)
 
-[node name="RequinOuest" parent="Requins" unique_id=1902026810 instance=ExtResource("13_tn4qm")]
+[node name="Requin4" parent="Requins" unique_id=1902026810 instance=ExtResource("13_tn4qm")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -330, -0.3, -10)
 distance = 50.0
 vitesse = 5.0
 direction = Vector3(0, 0, -1)
 
-[node name="RequinSudOuest" parent="Requins" unique_id=1902026811 instance=ExtResource("13_tn4qm")]
+[node name="Requin5" parent="Requins" unique_id=1902026811 instance=ExtResource("13_tn4qm")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -150, -0.3, 200)
 distance = 60.0
 vitesse = 5.5
 
-[node name="RequinSud" parent="Requins" unique_id=1902026812 instance=ExtResource("13_tn4qm")]
+[node name="Requin6" parent="Requins" unique_id=1902026812 instance=ExtResource("13_tn4qm")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 100, -0.3, 230)
 distance = 60.0
 vitesse = 6.0
 
-[node name="RequinRouteOuest" parent="Requins" unique_id=1902026813 instance=ExtResource("13_tn4qm")]
+[node name="Requin7" parent="Requins" unique_id=1902026813 instance=ExtResource("13_tn4qm")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -70, -0.3, 120)
 distance = 50.0
 vitesse = 5.5
 direction = Vector3(0, 0, 1)
 
-[node name="RequinRouteNord" parent="Requins" unique_id=1902026814 instance=ExtResource("13_tn4qm")]
+[node name="Requin8" parent="Requins" unique_id=1902026814 instance=ExtResource("13_tn4qm")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, -0.3, -110)
 distance = 50.0
 vitesse = 5.0
 
-[node name="RequinNordOuest" parent="Requins" unique_id=1902026815 instance=ExtResource("13_tn4qm")]
+[node name="Requin9" parent="Requins" unique_id=1902026815 instance=ExtResource("13_tn4qm")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -250, -0.3, -150)
 distance = 50.0
 vitesse = 5.5
@@ -465,13 +471,13 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 96.1, 0, 158.2)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -302.9, 0, 167.2)
 
 [node name="Jerrican6" parent="Jerricans" unique_id=1904417506 instance=ExtResource("18_jerrican")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 356.8, 0, 251.0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 356.8, 0, 251)
 
 [node name="Jerrican7" parent="Jerricans" unique_id=1904417507 instance=ExtResource("18_jerrican")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -253.5, 0, -261.9)
 
 [node name="Jerrican8" parent="Jerricans" unique_id=1904417508 instance=ExtResource("18_jerrican")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.0, 0, -237.8)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, 0, -237.8)
 
 [node name="Jerrican9" parent="Jerricans" unique_id=1904417509 instance=ExtResource("18_jerrican")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -229.2, 0, -139.4)
@@ -480,7 +486,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -229.2, 0, -139.4)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -347.7, 0, -19.5)
 
 [node name="Jerrican11" parent="Jerricans" unique_id=1904417511 instance=ExtResource("18_jerrican")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -44.0, 0, 184.9)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -44, 0, 184.9)
 
 [node name="Jerrican12" parent="Jerricans" unique_id=1904417512 instance=ExtResource("18_jerrican")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -31.6, 0, -119.8)
@@ -489,7 +495,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -31.6, 0, -119.8)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 251.8, 0, 112.2)
 
 [node name="Jerrican14" parent="Jerricans" unique_id=1904417514 instance=ExtResource("18_jerrican")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -136.7, 0, -146.0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -136.7, 0, -146)
 
 [node name="Missions" type="Node" parent="." unique_id=1904417600]
 script = ExtResource("19_missions")
@@ -508,6 +514,7 @@ shape = SubResource("BoxShape3D_murNord")
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Limites/MurNord" unique_id=1539140937]
 material_override = SubResource("StandardMaterial3D_murRouge")
 mesh = SubResource("BoxMesh_murNord")
+visible = false
 
 [node name="MurSud" type="StaticBody3D" parent="Limites" unique_id=737871286]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10, 300)
@@ -518,6 +525,7 @@ shape = SubResource("BoxShape3D_murSud")
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Limites/MurSud" unique_id=1092847361]
 material_override = SubResource("StandardMaterial3D_murRouge")
 mesh = SubResource("BoxMesh_murSud")
+visible = false
 
 [node name="MurOuest" type="StaticBody3D" parent="Limites" unique_id=1265005627]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -400, 10, 0)
@@ -528,6 +536,7 @@ shape = SubResource("BoxShape3D_murOuest")
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Limites/MurOuest" unique_id=1648203957]
 material_override = SubResource("StandardMaterial3D_murRouge")
 mesh = SubResource("BoxMesh_murOuest")
+visible = false
 
 [node name="MurEst" type="StaticBody3D" parent="Limites" unique_id=1029341468]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 400, 10, 0)
@@ -538,6 +547,15 @@ shape = SubResource("BoxShape3D_murEst")
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Limites/MurEst" unique_id=1739462085]
 material_override = SubResource("StandardMaterial3D_murRouge")
 mesh = SubResource("BoxMesh_murEst")
+visible = false
 
 [node name="Requin" parent="." unique_id=1902026753 instance=ExtResource("13_tn4qm")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 137.749, -0.3, 42)
+
+[node name="FmodBankLoader" type="FmodBankLoader" parent="." unique_id=2018393378]
+bank_paths = ["res://FMOD Banks/Desktop/Master.bank", "res://FMOD Banks/Desktop/Master.strings.bank"]
+
+[node name="Sons" type="Node" parent="." unique_id=2018393379]
+script = ExtResource("20_sons")
+
+[node name="Oreilles" type="FmodListener3D" parent="Sons" unique_id=809941985]

@@ -3,9 +3,11 @@ extends Node
 # Autoload qui parle avec la manette Arduino par le port série (115200 bauds).
 #
 # Ce que l'Arduino envoie :
-#   VITESSE:<-50 à 100>      la glissière
-#   GOUVERNAIL:<-50 à 50>    l'encodeur (gauche = négatif)
-#   BTN:1  BTN:2  BTN:ENC    les boutons
+#   VITESSE:<-50 à 100>      la glissière (sert seulement en bateau)
+#   GOUVERNAIL:<-50 à 50>    l'encodeur (gauche = négatif) : tourne le bateau, ou la vue à pied
+#   JOY:<x>,<y>              le joystick, de -100 à 100 (zone morte déjà faite par l'Arduino),
+#                            sert seulement à pied
+#   BTN:1  BTN:2  BTN:ENC  BTN:JOY    les boutons
 #
 # Ce qu'on envoie à l'Arduino :
 #   F<0-100>   jauge d'essence
@@ -14,6 +16,7 @@ extends Node
 
 signal connecte
 signal deconnecte
+signal joystick_changed(vecteur: Vector2)  # x : droite, y : en avant, chacun de -1 à 1
 
 const BAUDS := 115200
 const NOMS_PORTS := ["usbmodem", "usbserial", "ttyACM", "ttyUSB", "COM"]
@@ -21,6 +24,9 @@ const NOMS_PORTS := ["usbmodem", "usbserial", "ttyACM", "ttyUSB", "COM"]
 # quel numéro correspond à quel bouton (à inverser si c'est dans l'autre sens)
 const BOUTON_GAUCHE := "2"  # relancer la partie, comme la touche R
 const BOUTON_DROIT := "1"   # interagir, comme la touche E
+
+# si le personnage recule quand on pousse le joystick vers l'avant, mettre true
+const INVERSER_JOY_Y := false
 
 # l'Arduino renvoie BTN:x en boucle quand on reste appuyé :
 # on ne compte qu'un appui si le bouton a été relâché au moins ce temps
@@ -32,6 +38,7 @@ var manette_active := false  # true si on a lancé le jeu avec le bouton Arduino
 
 var vitesse := 0     # -50 à 100
 var gouvernail := 0  # -50 à 50
+var joystick := Vector2.ZERO  # -1 à 1 sur chaque axe (y positif = en avant)
 
 var texte_recu := ""
 var temps_avant_essai := 0.0
@@ -110,6 +117,7 @@ func _perdre_connexion():
 	est_connecte = false
 	vitesse = 0
 	gouvernail = 0
+	joystick = Vector2.ZERO
 	serie.close()
 	print("Manette déconnectée")
 	deconnecte.emit()
@@ -126,8 +134,23 @@ func _lire_ligne(ligne: String):
 		vitesse = clampi(valeur.to_int(), -50, 100)
 	elif cle == "GOUVERNAIL":
 		gouvernail = clampi(valeur.to_int(), -50, 50)
+	elif cle == "JOY":
+		_lire_joystick(valeur)
 	elif cle == "BTN":
 		_appui_bouton(valeur)
+
+
+# "x,y" de -100 à 100 -> Vector2 de -1 à 1
+func _lire_joystick(valeur: String):
+	var axes := valeur.split(",")
+	if axes.size() != 2:
+		return
+	var nouveau := Vector2(clampi(axes[0].to_int(), -100, 100), clampi(axes[1].to_int(), -100, 100)) / 100.0
+	if INVERSER_JOY_Y:
+		nouveau.y = -nouveau.y
+	if nouveau != joystick:
+		joystick = nouveau
+		joystick_changed.emit(joystick)
 
 
 func _appui_bouton(bouton: String):
@@ -169,6 +192,13 @@ func avance() -> float:
 	if vitesse > 0:
 		return vitesse / 100.0
 	return vitesse / 50.0
+
+
+# le joystick pour marcher : x de -1 (gauche) à 1 (droite), y de -1 (reculer) à 1 (avancer)
+func deplacement() -> Vector2:
+	if not manette_active:
+		return Vector2.ZERO
+	return joystick
 
 
 # entre -1 (à gauche) et 1 (à droite)

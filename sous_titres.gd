@@ -1,7 +1,9 @@
 extends CanvasLayer
 
 # Affiche les répliques en sous-titres, une par une, en bas de l'écran.
-# Si une réplique a un fichier de voix, on le joue et on attend la fin du son.
+# Si une réplique a un fichier de voix (3e élément), on le joue.
+# Un enregistrement peut couvrir plusieurs répliques : les suivantes ont "" en 3e élément
+# ("la voix continue"), et le temps du son est partagé entre elles selon la longueur du texte.
 
 signal fini  # quand toutes les répliques ont été affichées
 
@@ -10,6 +12,7 @@ const TEMPS_PAR_LETTRE := 0.06
 
 var file_attente := []
 var temps_restant := 0.0
+var durees_voix := []  # temps d'affichage des répliques suivantes qui partagent la voix en cours
 
 var bandeau: VBoxContainer
 var nom: Label
@@ -27,6 +30,7 @@ func _ready():
 func dire(repliques: Array, interrompre := false):
 	if interrompre:
 		file_attente.clear()
+		durees_voix.clear()
 		voix.stop()
 	for replique in repliques:
 		file_attente.append(replique)
@@ -36,6 +40,11 @@ func dire(repliques: Array, interrompre := false):
 
 func est_en_train_de_parler() -> bool:
 	return bandeau.visible
+
+
+# pour baisser la musique pendant que Marcel parle
+func voix_en_cours() -> bool:
+	return voix.playing
 
 
 func _process(delta):
@@ -48,6 +57,10 @@ func _process(delta):
 
 func _replique_suivante():
 	if file_attente.is_empty():
+		# on laisse finir la voix avant d'enlever le dernier sous-titre
+		if voix.playing:
+			temps_restant = voix.stream.get_length() - voix.get_playback_position() + 0.3
+			return
 		bandeau.hide()
 		fini.emit()
 		return
@@ -60,11 +73,31 @@ func _replique_suivante():
 	# temps d'affichage selon la longueur du texte
 	temps_restant = TEMPS_MINIMUM + replique[1].length() * TEMPS_PAR_LETTRE
 
-	# plus tard : la voix (3e élément de la réplique)
-	if replique.size() >= 3 and ResourceLoader.exists(replique[2]):
+	var a_une_voix: bool = replique.size() >= 3 and replique[2] != "" and ResourceLoader.exists(replique[2])
+	var suite_de_voix: bool = replique.size() >= 3 and replique[2] == ""
+	if a_une_voix:
 		voix.stream = load(replique[2])
 		voix.play()
-		temps_restant = max(temps_restant, voix.stream.get_length() + 0.3)
+		_partager_voix(replique)
+	if (a_une_voix or suite_de_voix) and not durees_voix.is_empty():
+		temps_restant = durees_voix.pop_front()
+
+
+# La voix qui commence couvre cette réplique et les suivantes marquées "".
+# Chacune reste affichée une part du son proportionnelle à son nombre de lettres.
+func _partager_voix(premiere: Array):
+	var textes := [premiere[1]]
+	for suivante in file_attente:
+		if suivante.size() < 3 or suivante[2] != "":
+			break
+		textes.append(suivante[1])
+	var lettres := 0
+	for texte in textes:
+		lettres += texte.length()
+	durees_voix.clear()
+	for texte in textes:
+		durees_voix.append(voix.stream.get_length() * texte.length() / lettres)
+	durees_voix[-1] += 0.3  # un petit temps après la fin de la voix
 
 
 func _creer_interface():
@@ -84,6 +117,7 @@ func _creer_interface():
 	texte.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
 	voix = AudioStreamPlayer.new()
+	voix.volume_db = 6.0  # plus fort que les sons du jeu
 	add_child(voix)
 
 

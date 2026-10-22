@@ -4,8 +4,10 @@ class_name Scenario
 # Pour changer l'histoire, il suffit de modifier ce fichier.
 #
 # Une réplique = ["Nom du personnage", "Texte affiché en sous-titre"]
-# Plus tard, pour la voix, on ajoutera le fichier son en 3e :
-#   ["Marcel", "Je m'appelle Marcel.", "res://voix/intro_1.ogg"]
+# Avec la voix, on ajoute le fichier son en 3e :
+#   ["Marcel", "Je m'appelle Marcel.", "res://voix/marcel_1.wav"]
+# Si un enregistrement continue sur les répliques suivantes, elles ont "" en 3e
+# (le temps du son est partagé entre elles selon la longueur du texte).
 
 
 # ---------- Scène 1 : l'île de la Débrouille ----------
@@ -14,21 +16,20 @@ class_name Scenario
 const INTRO_TEXTE := "L'inflation a tout dévoré.\nLes océans sont vides, les portefeuilles aussi.\nIl ne reste qu'un mythe pour sauver le peuple."
 
 const INTRO := [
-	["Marcel", "Je m'appelle Marcel. Avant, je pêchais le bar. Aujourd'hui, je pêche la survie."],
-	["Marcel", "La crise a eu ma peau. J'ai dû vendre mes filets, mes cannes, mon sonar, et même ma dent en or."],
-	["Marcel", "Tout ça... pour un misérable jerrican de sans-plomb."],
-	["Marcel", "Mon réservoir est entamé, et mon compte est à sec."],
-	["Marcel", "La prophétie dit que le \"Gilet Jaune Ultime\" est caché dans la baie. Trois coffres. Un seul contient la relique."],
-	["Marcel", "Si j'arrive à le mettre sur la Statue de la Liberté Économique... la donne changera."],
-	["Marcel", "C'est mon dernier voyage. Je dois tenter le tout pour le tout !"],
+	["Marcel", "Je m'appelle Marcel. Avant, je pêchais le bar. Aujourd'hui, je pêche la survie.", "res://voix/marcel_1.wav"],
+	["Marcel", "La crise a eu ma peau. J'ai dû vendre mes filets, mes cannes, mon sonar, et même ma dent en or.", ""],
+	["Marcel", "Tout ça pour quoi ? Pour un misérable jerrican de sans-plomb 95.", ""],
+	["Marcel", "Mon réservoir est plein, et mon compte est à sec.", "res://voix/marcel_2.wav"],
+	["Marcel", "La prophétie dit que le \"Gilet Jaune Ultime\" est caché dans la baie. Trois coffres. Un seul contient la relique.", ""],
+	["Marcel", "Si j'arrive à le mettre sur la Statue de la Liberté Économique... la donne pourra changer.", ""],
+	["Marcel", "C'est mon dernier voyage. Je dois tenter le tout pour le tout !", ""],
 ]
 
 
 # ---------- Scène 2 : la chasse aux coffres et la course au carburant ----------
 
 const DEPART_BATEAU := [
-	["Marcel", "Allez, ma vieille chaloupe. Tiens le coup !"],
-	["Marcel", "Faut garder un œil sur le voyant d'essence... Si la réserve tombe à sec, c'est la fin assurée au milieu des vagues."],
+	["Marcel", "Allez, ma vieille chaloupe ! Tiens le coup ! Le carburant coûte un bras, on n'a pas le droit à l'erreur.", "res://voix/marcel_3.wav"],
 ]
 
 const JERRICAN := [
@@ -36,7 +37,7 @@ const JERRICAN := [
 ]
 
 const COFFRE_1 := [
-	["Marcel", "Qu'est-ce que... Un numéro vert imprimé sur un bout de carton mouillé ? Inutile ! On continue !"],
+	["Marcel", "Qu'est-ce que... Un numéro vert imprimé sur un bout de carton mouillé ? Inutile ! On continue !", "res://voix/marcel_4.wav"],
 ]
 
 const ESSENCE_BASSE := [
@@ -44,12 +45,13 @@ const ESSENCE_BASSE := [
 ]
 
 const COFFRE_2 := [
-	["Marcel", "Une promesse électorale de 2017 à moitié rouillée ?! Bordel... Plus qu'une chance ou je finis en rade complète."],
+	["Marcel", "Une promesse électorale de 2017 à moitié rouillée ?! Bordel... J'ai presque plus d'essence.", "res://voix/marcel_5.wav"],
+	["Marcel", "Plus qu'une chance ou je finis à la rame jusqu'à Pôle emploi !", ""],
 ]
 
 const GILET := [
-	["Marcel", "Le Gilet Jaune Ultime... Tissé en fils de pouvoir d'achat pur."],
-	["Marcel", "Ses bandes réfléchissantes pourraient aveugler un huissier. Je l'ai !"],
+	["Marcel", "Le Gilet Jaune Ultime... Tissé en fils de pouvoir d'achat pur.", "res://voix/marcel_6.wav"],
+	["Marcel", "Ses bandes réfléchissantes pourraient aveugler un huissier. Je l'ai ! Je l'ai enfin trouvé !", ""],
 ]
 
 # ce qu'on trouve dans les coffres vides
@@ -65,22 +67,22 @@ const TEXTE_GAME_OVER_PANNE := "GAME OVER - PANNE SÈCHE"
 # ---------- Scène 3 : le sacrifice final ----------
 
 const ARRIVEE_STATUE := [
-	["Marcel", "Pile à sec... Mais la voilà, la Statue de la Liberté Économique !"],
+	["Marcel", "La voilà, la Statue de la Liberté Économique... Enfin !", "res://voix/marcel_7.wav"],
 ]
 
 const MARCHE_STATUE := [
-	["Marcel", "Ça, c'est pour mes filets... Ça, c'est pour la TVA... les impôts et j'en passe..."],
+	["Marcel", "Ça, c'est pour mes filets... Ça, c'est pour la TVA... les impôts et j'en passe...", "res://voix/marcel_8.wav"],
 ]
 
 
 # ---------- Scène 4 : épilogue ----------
 
 const EPILOGUE := [
-	["Marcel", "Et c'est ainsi que la lumière est revenue."],
-	["Marcel", "Pas celle des marchés financiers ou des grands discours. Celle de la rue."],
-	["Marcel", "La crise n'a pas disparu du jour au lendemain, mais la statue porte désormais nos couleurs."],
-	["Marcel", "On leur a rappelé une chose essentielle :"],
-	["Marcel", "la vraie valeur d'un pays, ce ne sont pas ses indices boursiers, c'est la dignité de ceux qui le font vivre."],
+	["Marcel", "Et c'est ainsi que la lumière est revenue.", "res://voix/marcel_9.wav"],
+	["Marcel", "Pas celle des marchés financiers ou des grands discours. Celle de la rue.", ""],
+	["Marcel", "La crise n'a pas disparu du jour au lendemain, mais la statue porte désormais nos couleurs.", ""],
+	["Marcel", "On leur a rappelé une chose essentielle :", ""],
+	["Marcel", "la vraie valeur d'un pays, ce ne sont pas ses indices boursiers, c'est la dignité de ceux qui le font vivre.", ""],
 ]
 const TEXTE_FIN := "FIN"
 

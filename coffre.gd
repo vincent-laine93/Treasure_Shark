@@ -9,15 +9,19 @@ const PERIODE := 3.0
 
 @export var contenu := ""  # vide = rien dedans
 @export var sur_terre := false
+@export var muet := false  # pas de son de trésor quand on s'approche
 
 var ouvert := false
 var temps := randf() * PERIODE  # pour que les coffres ne bougent pas tous en même temps
+var son: Node3D = null
 
 @onready var modele: Node3D = $Modele
 
 
 func _ready():
 	add_to_group("coffres")
+	if not muet:
+		son = Sons.ajouter_proximite(self, "tresor")
 
 
 func _process(delta):
@@ -29,6 +33,9 @@ func _process(delta):
 
 func ouvrir() -> String:
 	ouvert = true
+	if son != null:
+		son.queue_free()  # plus de son de trésor une fois ouvert
+	Sons.jouer("tresor_ouvert")
 	$CollisionShape3D.set_deferred("disabled", true)
 
 	var tween := create_tween()

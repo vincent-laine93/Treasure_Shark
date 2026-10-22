@@ -2,6 +2,8 @@ extends CharacterBody3D
 
 # Le joueur à pied, en vue à la première personne.
 # Flèches haut/bas pour avancer/reculer, gauche/droite pour tourner.
+# Avec la manette : le joystick pour marcher (dans le sens où l'on regarde),
+# le gouvernail pour tourner la vue. La glissière ne sert pas à pied.
 # E sert à tout : ouvrir un coffre, poser le gilet sur la statue,
 # descendre du bateau, faire le plein et monter dans le bateau.
 
@@ -16,6 +18,7 @@ const RECUL_BORD := 2.0  # on pose le joueur un peu plus loin que le bord de l'�
 const HAUTEUR_TERRE := 0.3  # plus bas que ça, c'est sous l'eau
 const DISTANCE_COFFRE := 6.0
 const DISTANCE_STATUE := 7.0
+const DISTANCE_ILE_STATUE := 40.0  # plus près que ça de la statue, on est sur son île
 
 const VIES_MAX := 3
 const ZONE_MORTE_GOUVERNAIL := 3  # crans à tourner avant que le personnage commence à tourner
@@ -74,6 +77,7 @@ func _process(delta):
 
 func _physics_process(delta):
 	if a_gagne or bloque:
+		aide.text = ""  # pas de "E : ..." pendant les cinématiques
 		return
 
 	if dans_bateau:
@@ -92,21 +96,27 @@ func _marcher(delta):
 		velocity.y = SAUT
 
 	var tourne := Input.get_axis("droite", "gauche")
-	var marche := Input.get_axis("reculer", "avancer")
-	# avec la manette : glissière pour avancer, gouvernail pour tourner
-	# le gouvernail marche comme les flèches : tourné à droite du milieu on tourne à droite
-	# à la même vitesse que la flèche, revenu au milieu on s'arrête
+	# x : pas de côté (droite positive), y : avancer / reculer
+	var pas := Vector2(0, Input.get_axis("reculer", "avancer"))
+	# avec la manette, le gouvernail oriente la vue comme les flèches :
+	# tourné à droite du milieu on tourne à droite à la même vitesse, revenu au milieu on s'arrête
 	if SerialManager.manette_active:
 		var ecart := SerialManager.gouvernail - milieu_gouvernail
 		if ecart >= ZONE_MORTE_GOUVERNAIL:
 			tourne = -1.0
 		elif ecart <= -ZONE_MORTE_GOUVERNAIL:
 			tourne = 1.0
-	if SerialManager.avance() != 0:
-		marche = SerialManager.avance()
+	# le joystick fait marcher dans toutes les directions, par rapport à la caméra
+	if SerialManager.deplacement() != Vector2.ZERO:
+		pas = SerialManager.deplacement()
+	pas = pas.limit_length(1.0)  # en diagonale on ne va pas plus vite
 
 	rotate_y(tourne * VITESSE_ROTATION * delta)
-	var direction := -transform.basis.z * marche
+	var devant := -camera.global_basis.z
+	devant.y = 0
+	var droite := camera.global_basis.x
+	droite.y = 0
+	var direction := devant.normalized() * pas.y + droite.normalized() * pas.x
 	velocity.x = direction.x * VITESSE_MARCHE
 	velocity.z = direction.z * VITESSE_MARCHE
 	move_and_slide()
@@ -130,9 +140,16 @@ func _interactions():
 		pres_du_bateau = global_position.distance_to(bateau.global_position) < DISTANCE_MONTER
 
 	var a_sec := bateau.carburant <= 0
+	var sur_ile_statue := _distance_a_plat(statue.global_position) < DISTANCE_ILE_STATUE
 	var a_le_gilet := inventaire.has(OBJET_VICTOIRE)
 	var a_le_jerrican := inventaire.has(OBJET_CARBURANT)
 	var appui := Input.is_action_just_pressed("interagir")
+
+	# sur l'île de la statue, on laisse Marcel finir de parler avant de pouvoir faire quoi que ce soit
+	var missions = get_tree().get_first_node_in_group("missions")
+	if sur_ile_statue and missions != null and missions.sous_titres.est_en_train_de_parler():
+		aide.text = ""
+		return
 
 	if coffre != null:
 		aide.text = "E : ouvrir le coffre"
@@ -151,6 +168,9 @@ func _interactions():
 		aide.text = "E : descendre sur l'île"
 		if appui:
 			_descendre(point_descente)
+
+	elif pres_du_bateau and a_sec and sur_ile_statue:
+		aide.text = ""  # le bateau est arrivé à sec à la statue, c'est normal
 
 	elif pres_du_bateau and a_sec:
 		if a_le_jerrican:
@@ -208,6 +228,7 @@ func _faire_le_plein():
 	inventaire.erase(OBJET_CARBURANT)
 	_afficher_inventaire()
 	bateau.faire_le_plein()
+	Sons.jouer("essence_ramassee")
 	_mission_faite("plein")
 	_afficher_message("Le plein est fait ! Tu peux monter dans le bateau.")
 
@@ -308,6 +329,8 @@ func perdre_vie(raison := "Le requin t'a mordu !", cote := "gauche"):
 
 func _gagner():
 	a_gagne = true
+	Sons.couper_tout(get_tree())  # plus de moteur, de requins ni de musique pendant la fin
+	get_tree().get_first_node_in_group("missions").dissiper_brouillard()
 	aide.text = ""
 	inventaire.erase(OBJET_VICTOIRE)
 	_afficher_inventaire()

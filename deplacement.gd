@@ -20,6 +20,8 @@ var recharge := 0.0
 
 
 func _ready():
+	add_to_group("requins")  # sons.gd fait battre le cœur quand on est près
+	Sons.ajouter_proximite(self, "requin")
 	direction.y = 0
 	point_a = global_position
 	point_b = point_a + direction.normalized() * distance
@@ -74,6 +76,7 @@ func _attaquer(bateau: Bateau, joueur):
 	attaque_en_cours = true
 	rotation.y = _angle_vers(bateau.global_position)
 	anim.play("attaque")
+	Sons.jouer("requin_attaque")
 	# de quel côté du bateau est le requin (le bateau regarde vers -Z)
 	var cote := "droite"
 	if bateau.to_local(global_position).x < 0:
