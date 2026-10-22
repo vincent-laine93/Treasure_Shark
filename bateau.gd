@@ -14,10 +14,10 @@ const RECUL_CHOC := 2.0
 
 # essence
 const CARBURANT_MAX := 100.0
-const CONSOMMATION := 0.2  # par seconde à fond
+const CONSOMMATION := 1.0  # par seconde à fond : un plein dure 100 s de gaz
 
 # caméra du pilote
-const CAMERA_POSITION := Vector3(0, 1.75, 1.2)
+const CAMERA_POSITION := Vector3(0, 1.6, 1.2)
 const CAMERA_INCLINAISON := -6.0
 const CAMERA_CHAMP := 80.0
 
@@ -110,6 +110,8 @@ func _physics_process(delta):
 	velocity = -transform.basis.z * vitesse
 	velocity.y = 0.0
 	move_and_slide()
+	# le bateau reste toujours sur l'eau : sinon en frottant le fond d'une île il glisse vers le haut
+	global_position.y = 0.0
 
 	# on dit à l'eau où est le bateau (eau calme autour et pas d'eau dans la coque)
 	var avant := -transform.basis.z

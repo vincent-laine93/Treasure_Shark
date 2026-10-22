@@ -1,0 +1,21 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://jerrican.gd" id="1_jerrican"]
+[ext_resource type="PackedScene" uid="uid://dm2dn1vdpogsk" path="res://jerrican.glb" id="2_modele"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_ramassage"]
+height = 3.0
+radius = 2.5
+
+[node name="Jerrican" type="Area3D"]
+script = ExtResource("1_jerrican")
+
+[node name="Modele" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
+
+[node name="jerrican" parent="Modele" instance=ExtResource("2_modele")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 0, 0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("CylinderShape3D_ramassage")

@@ -9,8 +9,6 @@ uniform float vitesse = 1.0;
 uniform float ecume = 0.6;
 uniform vec3 position_bateau = vec3(0.0);
 uniform vec2 avant_bateau = vec2(0.0, -1.0);
-// demi-largeur et demi-longueur de la coque : pas d'eau dedans
-uniform vec2 taille_coque = vec2(1.15, 2.85);
 uniform sampler2D normale1 : hint_normal, filter_linear_mipmap, repeat_enable;
 uniform sampler2D normale2 : hint_normal, filter_linear_mipmap, repeat_enable;
 uniform sampler2D bruit_ecume : filter_linear_mipmap, repeat_enable;
@@ -46,13 +44,32 @@ void vertex() {
 	pos_monde = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 }
 
-void fragment() {
-	vec2 p = pos_monde.xz;
-	// on ne dessine pas l'eau dans la coque du bateau
-	vec2 d = p - position_bateau.xz;
+// forme de la coque au niveau de l'eau, un peu plus petite que la vraie coque
+// en_long : distance vers l'avant du bateau (l'avant est pointu)
+float demi_largeur_coque(float en_long) {
+	if (en_long > 2.55 || en_long < -2.85) {
+		return 0.0;
+	}
+	if (en_long > 0.6) {
+		return mix(0.8, 0.15, (en_long - 0.6) / 1.95);
+	}
+	if (en_long < -2.1) {
+		return 0.62;
+	}
+	return 0.8;
+}
+
+bool dans_coque(vec2 point) {
+	vec2 d = point - position_bateau.xz;
 	float en_long = dot(d, avant_bateau);
 	float en_large = dot(d, vec2(-avant_bateau.y, avant_bateau.x));
-	if (abs(en_large) < taille_coque.x && abs(en_long) < taille_coque.y) {
+	return abs(en_large) < demi_largeur_coque(en_long);
+}
+
+void fragment() {
+	vec2 p = pos_monde.xz;
+	// pas d'eau à l'intérieur de la coque du bateau
+	if (dans_coque(p)) {
 		discard;
 	}
 	// petites rides

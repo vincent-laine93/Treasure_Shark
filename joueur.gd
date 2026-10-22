@@ -33,11 +33,11 @@ const DUREE_VOL_CAMERA := 2.5
 
 var dans_bateau := false
 var a_gagne := false
+var bloque := false  # pendant l'intro et les écrans de fin, on ne bouge pas
 var gravite: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var point_depart: Vector3
 var inventaire: Array[String] = []
 var vies := VIES_MAX
-var panne_signalee := false
 var temps_message := 0.0
 var milieu_gouvernail := 0  # position du gouvernail qui veut dire "tout droit" à pied
 
@@ -73,7 +73,7 @@ func _process(delta):
 
 
 func _physics_process(delta):
-	if a_gagne:
+	if a_gagne or bloque:
 		return
 
 	if dans_bateau:
@@ -185,6 +185,7 @@ func _regarder_vers(cible: Vector3):
 # ---------- bateau ----------
 
 func _monter():
+	_mission_faite("bateau")
 	dans_bateau = true
 	forme.disabled = true
 	velocity = Vector3.ZERO
@@ -207,7 +208,7 @@ func _faire_le_plein():
 	inventaire.erase(OBJET_CARBURANT)
 	_afficher_inventaire()
 	bateau.faire_le_plein()
-	panne_signalee = false
+	_mission_faite("plein")
 	_afficher_message("Le plein est fait ! Tu peux monter dans le bateau.")
 
 
@@ -242,6 +243,18 @@ func _sol_ile(point: Vector3):
 	return touche.position
 
 
+# est-ce qu'on peut descendre du bateau ici ?
+func peut_descendre() -> bool:
+	return _point_de_debarquement() != null
+
+
+# prévient missions.gd qu'on vient de faire quelque chose
+func _mission_faite(id: String):
+	var missions = get_tree().get_first_node_in_group("missions")
+	if missions != null:
+		missions.valider(id)
+
+
 # ---------- coffres ----------
 
 func _coffre_proche():
@@ -259,12 +272,14 @@ func _coffre_proche():
 
 func _ouvrir(coffre):
 	var objet: String = coffre.ouvrir()
-	if objet == "":
-		_afficher_message("Le coffre est vide...")
-	else:
+	if objet != "":
 		inventaire.append(objet)
 		_afficher_inventaire()
 		_afficher_message("Tu as trouvé : " + objet + " !")
+	# missions.gd s'occupe des répliques de Marcel et des coffres vides
+	var missions = get_tree().get_first_node_in_group("missions")
+	if missions != null:
+		missions.coffre_ouvert(objet)
 
 
 # ---------- vies et victoire ----------
@@ -297,7 +312,7 @@ func _gagner():
 	inventaire.erase(OBJET_VICTOIRE)
 	_afficher_inventaire()
 
-	await _filmer_statue_de_face()
+	var vue = await _filmer_statue_de_face()
 
 	# le gilet apparaît sur la statue en grandissant
 	gilet_statue.scale = Vector3.ONE * 0.01
@@ -307,7 +322,7 @@ func _gagner():
 	await tween.finished
 
 	await get_tree().create_timer(0.7).timeout
-	get_node("../Recommencer").victoire()
+	get_tree().get_first_node_in_group("missions").lancer_epilogue(vue)
 
 
 # Une nouvelle caméra part de nos yeux et va se placer devant la statue.
@@ -331,9 +346,15 @@ func _filmer_statue_de_face():
 	var tween := create_tween()
 	tween.tween_property(vue, "global_transform", arrivee, DUREE_VOL_CAMERA).set_trans(Tween.TRANS_SINE)
 	await tween.finished
+	return vue
 
 
 # ---------- affichage ----------
+
+# pour que les autres objets (jerricans...) puissent afficher un message
+func annoncer(texte: String):
+	_afficher_message(texte)
+
 
 func _afficher_message(texte: String):
 	message.text = texte
@@ -353,14 +374,13 @@ func _afficher_vies():
 
 func _afficher_essence():
 	essence_texte.text = "Essence : " + str(ceili(bateau.carburant)) + " / " + str(int(Bateau.CARBURANT_MAX))
-	if bateau.carburant < 15:
-		essence_texte.add_theme_color_override("font_color", Color(1, 0.35, 0.3))
+	# presque vide : l'essence passe dans la couleur secondaire et clignote
+	if bateau.carburant < 25:
+		essence_texte.add_theme_color_override("font_color", Couleurs.SECONDAIRE)
+		essence_texte.modulate.a = 0.4 + 0.6 * abs(sin(Time.get_ticks_msec() / 150.0))
 	else:
-		essence_texte.add_theme_color_override("font_color", Color(1, 0.75, 0.2))
-
-	if dans_bateau and bateau.carburant <= 0 and not panne_signalee:
-		panne_signalee = true
-		_afficher_message("Panne d'essence ! Le bateau ne peut plus avancer.")
+		essence_texte.add_theme_color_override("font_color", Couleurs.IMPORTANTE)
+		essence_texte.modulate.a = 1.0
 
 
 func _creer_interface():
@@ -379,7 +399,7 @@ func _creer_interface():
 	aide.offset_bottom = -80
 	aide.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
-	message = _creer_texte(calque, 56, Color.YELLOW)
+	message = _creer_texte(calque, 56, Couleurs.IMPORTANTE)
 	message.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
 	message.offset_top = 120
 	message.offset_bottom = 200
@@ -388,10 +408,10 @@ func _creer_interface():
 	inventaire_texte = _creer_texte(calque, 32, Color.WHITE)
 	inventaire_texte.position = Vector2(30, 20)
 
-	vies_texte = _creer_texte(calque, 32, Color(1, 0.35, 0.3))
+	vies_texte = _creer_texte(calque, 32, Couleurs.IMPORTANTE)
 	vies_texte.position = Vector2(30, 65)
 
-	essence_texte = _creer_texte(calque, 32, Color(1, 0.75, 0.2))
+	essence_texte = _creer_texte(calque, 32, Couleurs.IMPORTANTE)
 	essence_texte.position = Vector2(30, 110)
 
 	_afficher_inventaire()
@@ -402,7 +422,7 @@ func _creer_texte(calque: CanvasLayer, taille: int, couleur: Color) -> Label:
 	var texte := Label.new()
 	texte.add_theme_font_size_override("font_size", taille)
 	texte.add_theme_color_override("font_color", couleur)
-	texte.add_theme_color_override("font_outline_color", Color.BLACK)
+	texte.add_theme_color_override("font_outline_color", Couleurs.FONCEE)
 	texte.add_theme_constant_override("outline_size", 8)
 	calque.add_child(texte)
 	return texte

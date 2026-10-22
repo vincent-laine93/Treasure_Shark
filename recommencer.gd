@@ -2,7 +2,7 @@ extends CanvasLayer
 
 # Écran qui s'affiche par-dessus le jeu.
 # R : "Voulez-vous recommencer ?" (R oui, E non)
-# Sert aussi pour le game over et la victoire, là seul R marche.
+# Sert aussi pour le game over et l'écran de fin, là seul R marche.
 
 var fond: ColorRect
 var message: Label
@@ -40,35 +40,40 @@ func _unhandled_input(event):
 		get_tree().paused = false
 
 
-func game_over():
+func game_over(titre := "GAME OVER", texte := "Tu n'as plus de vie..."):
 	partie_perdue = true
-	message.text = "GAME OVER\n\nTu n'as plus de vie...\n\nR : recommencer"
-	message.add_theme_color_override("font_color", Color(1, 0.3, 0.25))
+	message.text = titre + "\n\n"
+	if texte != "":
+		message.text += texte + "\n\n"
+	message.text += "R : recommencer"
+	message.add_theme_color_override("font_color", Couleurs.IMPORTANTE)
+	message.add_theme_color_override("font_outline_color", Couleurs.SECONDAIRE)
 	fond.show()
 	get_tree().paused = true
 
 
-func victoire():
+# écran de fin, après l'épilogue
+func fin(titre: String, texte: String):
 	partie_perdue = true
-	message.text = "VICTOIRE !\n\nLa statue de la Liberté porte le gilet jaune.\nTu as gagné !\n\nR : rejouer"
-	message.add_theme_color_override("font_color", Color(0.95, 0.85, 0))
-	message.add_theme_color_override("font_outline_color", Color(0, 0.09, 0.28))
+	message.text = titre + "\n\n" + texte + "\n\nR : rejouer"
+	message.add_theme_color_override("font_color", Couleurs.IMPORTANTE)
+	message.add_theme_color_override("font_outline_color", Couleurs.FONCEE)
 	message.add_theme_constant_override("outline_size", 16)
 	# fond plus clair pour voir la statue derrière
-	fond.color = Color(0, 0.09, 0.28, 0.35)
+	fond.color = Color(Couleurs.FONCEE, 0.45)
 	fond.show()
 
 
 func _creer_interface():
 	fond = ColorRect.new()
-	fond.color = Color(0, 0, 0, 0.6)
+	fond.color = Color(Couleurs.FONCEE, 0.75)
 	fond.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(fond)
 
 	message = Label.new()
 	message.text = "Voulez-vous recommencer ?\n\nR : oui        E : non"
 	message.add_theme_font_size_override("font_size", 64)
-	message.add_theme_color_override("font_outline_color", Color.BLACK)
+	message.add_theme_color_override("font_outline_color", Couleurs.FONCEE)
 	message.add_theme_constant_override("outline_size", 10)
 	message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	message.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
