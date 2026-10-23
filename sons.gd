@@ -116,6 +116,9 @@ func _process(delta):
 		eau = 0.0
 	vagues.volume = 0.25 * eau * volume
 	vent.volume = 0.2 * eau * volume
+	# les vagues et le vent sont partout autour de nous
+	vagues.set_3d_attributes(oreilles.global_transform)
+	vent.set_3d_attributes(oreilles.global_transform)
 
 	var vitesse = abs(bateau.vitesse) / Bateau.VITESSE_MAX * 100
 	vent.set_parameter_by_name("Boat_Speed", vitesse)
@@ -141,6 +144,13 @@ func _moteur():
 		moteur.stop(FmodServer.FMOD_STUDIO_STOP_ALLOWFADEOUT)
 		jouer("Boat_Engine_Stop", 0.4)
 	moteur_allume = allume
+	if not allume:
+		return
+	# le moteur reste collé à nos oreilles, sinon il s'éloigne quand le bateau avance
+	moteur.set_3d_attributes(oreilles.global_transform)
+	# si le son s'est arrêté tout seul, on le relance tant qu'on navigue
+	if moteur.get_playback_state() == FmodServer.FMOD_STUDIO_PLAYBACK_STOPPED:
+		moteur.start()
 
 
 # le coeur bat de plus en plus fort quand un requin s'approche du bateau
