@@ -89,7 +89,7 @@ const MISSIONS := [
 	{"id": "jerrican", "objectif": "Récupère ton jerrican dans le coffre de la plage"},
 	{"id": "plein", "objectif": "Fais le plein du Pouvoir d'Achat"},
 	{"id": "bateau", "objectif": "Monte à bord du Pouvoir d'Achat"},
-	{"id": "gilet", "objectif": "Trouve le Gilet Jaune Ultime dans un des trois coffres"},
+	{"id": "gilet", "objectif": "Trouve le Gilet Jaune dans un des 3 coffres"},
 	{"id": "statue", "objectif": "Rejoins la Statue de la Liberté Économique"},
 	{"id": "poser", "objectif": "Mets le gilet sur la statue"},
 ]
