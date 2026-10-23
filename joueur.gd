@@ -2,7 +2,7 @@ extends CharacterBody3D
 
 # Le joueur à pied, vue à la première personne.
 # Flèches ou ZQSD pour bouger, E pour tout le reste.
-# Avec la manette : le joystick pour avancer/reculer et tourner (le gouvernail tourne aussi).
+# Avec la manette : le joystick pour avancer/reculer et tourner.
 
 const VITESSE_MARCHE := 5.0
 const VITESSE_ROTATION := 2.5
@@ -19,7 +19,6 @@ var point_depart: Vector3
 var inventaire = []
 var vies := VIES_MAX
 var temps_message := 0.0
-var milieu_gouvernail := 0  # position du gouvernail quand on va tout droit
 
 var aide: Label
 var message: Label
@@ -41,7 +40,6 @@ func _ready():
 	camera.make_current()
 	_creer_interface()
 	SerialManager.nouvelle_partie()
-	milieu_gouvernail = SerialManager.gouvernail
 
 
 func _process(delta):
@@ -73,13 +71,6 @@ func _marcher(delta):
 	var tourne = Input.get_axis("droite", "gauche")
 	var pas = Vector2(0, Input.get_axis("reculer", "avancer"))
 
-	# avec la manette, on tourne quand le gouvernail est à plus de 3 crans du milieu
-	if SerialManager.manette_active:
-		var ecart = SerialManager.gouvernail - milieu_gouvernail
-		if ecart >= 3:
-			tourne = -1.0
-		elif ecart <= -3:
-			tourne = 1.0
 	# le joystick : devant/derrière pour avancer/reculer, les côtés pour tourner
 	var joystick = SerialManager.deplacement()
 	if joystick != Vector2.ZERO:
@@ -160,7 +151,6 @@ func _monter():
 
 
 func _descendre(point: Vector3):
-	milieu_gouvernail = SerialManager.gouvernail
 	dans_bateau = false
 	bateau.quitter_commandes()
 	global_position = point
