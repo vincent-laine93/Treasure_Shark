@@ -24,6 +24,8 @@ const SONS := {
 	"SFX_Victory": "{9698ccf0-d8d9-4466-94dd-abe64b24d08a}",
 }
 
+const DUREE_MOTEUR := 12.4  # le son du moteur dure 12,5 s
+
 var musique: FmodEvent
 var vagues: FmodEvent
 var vent: FmodEvent
@@ -33,6 +35,7 @@ var coeur: FmodEvent
 var demarre := false
 var coupe := false
 var moteur_allume := false
+var temps_moteur := 0.0  # depuis quand le son du moteur joue
 var coeur_allume := false
 var musique_allumee := false
 var volume := 1.0  # baisse quand Marcel parle
@@ -140,6 +143,7 @@ func _moteur():
 	if allume and not moteur_allume:
 		jouer("Boat_Engine_Start", 0.4)
 		moteur.start()
+		temps_moteur = 0.0
 	if not allume and moteur_allume:
 		moteur.stop(FmodServer.FMOD_STUDIO_STOP_ALLOWFADEOUT)
 		jouer("Boat_Engine_Stop", 0.4)
@@ -148,8 +152,11 @@ func _moteur():
 		return
 	# le moteur reste collé à nos oreilles, sinon il s'éloigne quand le bateau avance
 	moteur.set_3d_attributes(oreilles.global_transform)
-	# si le son s'est arrêté tout seul, on le relance tant qu'on navigue
-	if moteur.get_playback_state() == FmodServer.FMOD_STUDIO_PLAYBACK_STOPPED:
+	# dans FMOD le son du moteur ne boucle pas : il dure 12,5 s puis se tait,
+	# alors on le relance juste avant la fin tant qu'on navigue
+	temps_moteur += get_process_delta_time()
+	if temps_moteur >= DUREE_MOTEUR:
+		temps_moteur = 0.0
 		moteur.start()
 
 
