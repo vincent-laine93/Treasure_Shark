@@ -16,6 +16,7 @@ var jerrican_dit := false
 var essence_basse_dite := false
 var marche_dite := false
 var vue_fin: Camera3D
+var faisceau: MeshInstance3D
 var machine_a_ecrire: FmodEvent
 
 var objectif: Label
@@ -46,8 +47,30 @@ func _ready():
 	environnement.fog_density = 0.004
 	environnement.fog_sky_affect = 0.0
 
+	_creer_faisceau()
 	_afficher_objectif()
 	_jouer_intro()
+
+
+# un grand faisceau de lumière sur la statue pour la voir de loin dans la brume
+func _creer_faisceau():
+	var cylindre = CylinderMesh.new()
+	cylindre.top_radius = 5
+	cylindre.bottom_radius = 5
+	cylindre.height = 400
+
+	var materiau = StandardMaterial3D.new()
+	materiau.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	materiau.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	materiau.albedo_color = Color(Couleurs.IMPORTANTE, 0.3)
+	materiau.disable_fog = true  # sinon la brume le cache
+
+	faisceau = MeshInstance3D.new()
+	faisceau.mesh = cylindre
+	faisceau.material_override = materiau
+	faisceau.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	statue.add_child(faisceau)
+	faisceau.position = Vector3(0, 200, 0)
 
 
 func _process(delta):
@@ -230,6 +253,7 @@ func _fin_intro():
 # ---------- fin ----------
 
 func dissiper_brouillard():
+	faisceau.hide()  # le gilet est sur la statue, plus besoin du faisceau
 	var tween = create_tween().set_parallel()
 	tween.tween_property(environnement, "fog_density", 0.0, 5.0)
 	tween.tween_property(environnement, "volumetric_fog_density", 0.0, 5.0)
