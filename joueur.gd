@@ -2,7 +2,7 @@ extends CharacterBody3D
 
 # Le joueur à pied, vue à la première personne.
 # Flèches ou ZQSD pour bouger, E pour tout le reste.
-# Avec la manette : le joystick pour marcher et le gouvernail pour tourner.
+# Avec la manette : le joystick pour avancer/reculer et tourner (le gouvernail tourne aussi).
 
 const VITESSE_MARCHE := 5.0
 const VITESSE_ROTATION := 2.5
@@ -80,9 +80,11 @@ func _marcher(delta):
 			tourne = -1.0
 		elif ecart <= -3:
 			tourne = 1.0
-	if SerialManager.deplacement() != Vector2.ZERO:
-		pas = SerialManager.deplacement()
-	pas = pas.limit_length(1.0)
+	# le joystick : devant/derrière pour avancer/reculer, les côtés pour tourner
+	var joystick = SerialManager.deplacement()
+	if joystick != Vector2.ZERO:
+		tourne = -joystick.x
+		pas = Vector2(0, joystick.y)
 
 	rotate_y(tourne * VITESSE_ROTATION * delta)
 	var devant = -global_basis.z
