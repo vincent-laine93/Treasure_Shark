@@ -83,7 +83,7 @@ func _marcher(delta):
 	# le joystick : devant/derrière pour avancer/reculer, les côtés pour tourner
 	var joystick = SerialManager.deplacement()
 	if joystick != Vector2.ZERO:
-		tourne = -joystick.x
+		tourne = joystick.x
 		pas = Vector2(0, joystick.y)
 
 	rotate_y(tourne * VITESSE_ROTATION * delta)
