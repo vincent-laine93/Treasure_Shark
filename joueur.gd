@@ -1,74 +1,51 @@
 extends CharacterBody3D
 
-# Le joueur à pied, en vue à la première personne.
-# Flèches haut/bas pour avancer/reculer, gauche/droite pour tourner.
-# Avec la manette : le joystick pour marcher (dans le sens où l'on regarde),
-# le gouvernail pour tourner la vue. La glissière ne sert pas à pied.
-# E sert à tout : ouvrir un coffre, poser le gilet sur la statue,
-# descendre du bateau, faire le plein et monter dans le bateau.
+# Le joueur à pied, vue à la première personne.
+# Flèches ou ZQSD pour bouger, E pour tout le reste.
+# Avec la manette : le joystick pour marcher et le gouvernail pour tourner.
 
 const VITESSE_MARCHE := 5.0
 const VITESSE_ROTATION := 2.5
 const SAUT := 4.5
-const HAUTEUR_CHUTE := -5.0  # si on tombe plus bas, on revient au départ
-
-const DISTANCE_MONTER := 6.0
-const DISTANCE_DESCENDRE := 6.0
-const RECUL_BORD := 2.0  # on pose le joueur un peu plus loin que le bord de l'île
-const HAUTEUR_TERRE := 0.3  # plus bas que ça, c'est sous l'eau
-const DISTANCE_COFFRE := 6.0
-const DISTANCE_STATUE := 7.0
-const DISTANCE_ILE_STATUE := 40.0  # plus près que ça de la statue, on est sur son île
-
 const VIES_MAX := 3
-const ZONE_MORTE_GOUVERNAIL := 3  # crans à tourner avant que le personnage commence à tourner
-const DUREE_MESSAGE := 3.0
-const OBJET_VICTOIRE := "Gilet jaune"
-const OBJET_CARBURANT := "Jerrican"
-
-# caméra de la fin, devant la statue
-const RECUL_VUE_STATUE := 26.0
-const HAUTEUR_VUE_STATUE := 9.0
-const HAUTEUR_REGARD_STATUE := 11.0
-const DUREE_VOL_CAMERA := 2.5
 
 @export var bateau: Bateau
 
 var dans_bateau := false
 var a_gagne := false
-var bloque := false  # pendant l'intro et les écrans de fin, on ne bouge pas
-var gravite: float = ProjectSettings.get_setting("physics/3d/default_gravity")
+var bloque := false  # pendant l'intro et les cinématiques
+var gravite = ProjectSettings.get_setting("physics/3d/default_gravity")
 var point_depart: Vector3
-var inventaire: Array[String] = []
+var inventaire = []
 var vies := VIES_MAX
 var temps_message := 0.0
-var milieu_gouvernail := 0  # position du gouvernail qui veut dire "tout droit" à pied
+var milieu_gouvernail := 0  # position du gouvernail quand on va tout droit
 
-# les textes affichés à l'écran
 var aide: Label
 var message: Label
 var inventaire_texte: Label
 var vies_texte: Label
 var essence_texte: Label
 
-@onready var camera: Camera3D = $Camera
-@onready var forme: CollisionShape3D = $CollisionShape3D
-@onready var statue: Node3D = get_node("../Ocean/IleStatue/StatueLiberte")
-@onready var gilet_statue: Node3D = statue.get_node("GiletStatue")
+@onready var camera = $Camera
+@onready var forme = $CollisionShape3D
+@onready var statue = get_node("../Ocean/IleStatue/StatueLiberte")
+@onready var gilet_statue = statue.get_node("GiletStatue")
+@onready var missions = get_node("../Missions")
 
 
 func _ready():
-	add_to_group("joueur")  # pour que les requins puissent nous trouver
+	add_to_group("joueur")
 	Bateau.creer_touches()
 	point_depart = global_position
 	camera.make_current()
 	_creer_interface()
-	SerialManager.nouvelle_partie()  # rallume les 3 LEDs de la manette
+	SerialManager.nouvelle_partie()
 	milieu_gouvernail = SerialManager.gouvernail
 
 
 func _process(delta):
-	# le message disparaît tout seul au bout de quelques secondes
+	# le message s'efface au bout de 3 secondes
 	if temps_message > 0:
 		temps_message -= delta
 		if temps_message <= 0:
@@ -77,15 +54,13 @@ func _process(delta):
 
 func _physics_process(delta):
 	if a_gagne or bloque:
-		aide.text = ""  # pas de "E : ..." pendant les cinématiques
+		aide.text = ""
 		return
-
 	if dans_bateau:
 		global_position = bateau.global_position
 	else:
 		_marcher(delta)
-
-	_interactions()
+	_touche_e()
 	_afficher_essence()
 
 
@@ -95,59 +70,48 @@ func _marcher(delta):
 	elif Input.is_action_just_pressed("sauter"):
 		velocity.y = SAUT
 
-	var tourne := Input.get_axis("droite", "gauche")
-	# x : pas de côté (droite positive), y : avancer / reculer
-	var pas := Vector2(0, Input.get_axis("reculer", "avancer"))
-	# avec la manette, le gouvernail oriente la vue comme les flèches :
-	# tourné à droite du milieu on tourne à droite à la même vitesse, revenu au milieu on s'arrête
+	var tourne = Input.get_axis("droite", "gauche")
+	var pas = Vector2(0, Input.get_axis("reculer", "avancer"))
+
+	# avec la manette, on tourne quand le gouvernail est à plus de 3 crans du milieu
 	if SerialManager.manette_active:
-		var ecart := SerialManager.gouvernail - milieu_gouvernail
-		if ecart >= ZONE_MORTE_GOUVERNAIL:
+		var ecart = SerialManager.gouvernail - milieu_gouvernail
+		if ecart >= 3:
 			tourne = -1.0
-		elif ecart <= -ZONE_MORTE_GOUVERNAIL:
+		elif ecart <= -3:
 			tourne = 1.0
-	# le joystick fait marcher dans toutes les directions, par rapport à la caméra
 	if SerialManager.deplacement() != Vector2.ZERO:
 		pas = SerialManager.deplacement()
-	pas = pas.limit_length(1.0)  # en diagonale on ne va pas plus vite
+	pas = pas.limit_length(1.0)
 
 	rotate_y(tourne * VITESSE_ROTATION * delta)
-	var devant := -camera.global_basis.z
-	devant.y = 0
-	var droite := camera.global_basis.x
-	droite.y = 0
-	var direction := devant.normalized() * pas.y + droite.normalized() * pas.x
+	var devant = -global_basis.z
+	var droite = global_basis.x
+	var direction = devant * pas.y + droite * pas.x
 	velocity.x = direction.x * VITESSE_MARCHE
 	velocity.z = direction.z * VITESSE_MARCHE
 	move_and_slide()
 
-	if global_position.y < HAUTEUR_CHUTE:
+	# si on tombe dans l'eau on revient au départ
+	if global_position.y < -5:
 		global_position = point_depart
 		velocity = Vector3.ZERO
 
 
-# On regarde ce qu'il y a autour pour savoir ce que fait la touche E
-func _interactions():
+# ce que fait la touche E selon où on est
+func _touche_e():
+	var appui = Input.is_action_just_pressed("interagir")
 	var coffre = _coffre_proche()
-	var pres_statue := false
-	var pres_du_bateau := false
+	var sur_ile_statue = missions.distance_statue(self) < 40
+	var pres_statue = not dans_bateau and missions.distance_statue(self) < 7
+	var pres_du_bateau = not dans_bateau and global_position.distance_to(bateau.global_position) < 6
+	var a_sec = bateau.carburant <= 0
 	var point_descente = null
-
 	if dans_bateau:
-		point_descente = _point_de_debarquement()
-	else:
-		pres_statue = _distance_a_plat(statue.global_position) < DISTANCE_STATUE
-		pres_du_bateau = global_position.distance_to(bateau.global_position) < DISTANCE_MONTER
+		point_descente = point_de_debarquement()
 
-	var a_sec := bateau.carburant <= 0
-	var sur_ile_statue := _distance_a_plat(statue.global_position) < DISTANCE_ILE_STATUE
-	var a_le_gilet := inventaire.has(OBJET_VICTOIRE)
-	var a_le_jerrican := inventaire.has(OBJET_CARBURANT)
-	var appui := Input.is_action_just_pressed("interagir")
-
-	# sur l'île de la statue, on laisse Marcel finir de parler avant de pouvoir faire quoi que ce soit
-	var missions = get_tree().get_first_node_in_group("missions")
-	if sur_ile_statue and missions != null and missions.sous_titres.est_en_train_de_parler():
+	# sur l'île de la statue on attend que Marcel ait fini de parler
+	if sur_ile_statue and missions.sous_titres.est_en_train_de_parler():
 		aide.text = ""
 		return
 
@@ -155,57 +119,38 @@ func _interactions():
 		aide.text = "E : ouvrir le coffre"
 		if appui:
 			_ouvrir(coffre)
-
 	elif pres_statue:
-		if a_le_gilet:
+		if inventaire.has("Gilet jaune"):
 			aide.text = "E : mettre le gilet jaune sur la statue"
 			if appui:
 				_gagner()
 		else:
 			aide.text = "Il te faut le gilet jaune, cherche dans les coffres !"
-
 	elif point_descente != null:
 		aide.text = "E : descendre sur l'île"
 		if appui:
 			_descendre(point_descente)
-
 	elif pres_du_bateau and a_sec and sur_ile_statue:
-		aide.text = ""  # le bateau est arrivé à sec à la statue, c'est normal
-
+		aide.text = ""  # le bateau est à sec à la statue, c'est normal
 	elif pres_du_bateau and a_sec:
-		if a_le_jerrican:
+		if inventaire.has("Jerrican"):
 			aide.text = "E : faire le plein avec le jerrican"
 			if appui:
 				_faire_le_plein()
 		else:
 			aide.text = "Le bateau est à sec, trouve un jerrican sur l'île !"
-
 	elif pres_du_bateau:
 		aide.text = "E : monter dans le bateau"
 		if appui:
 			_monter()
-
 	else:
 		aide.text = ""
-
-
-func _distance_a_plat(point: Vector3) -> float:
-	var ecart := point - global_position
-	ecart.y = 0
-	return ecart.length()
-
-
-func _regarder_vers(cible: Vector3):
-	cible.y = global_position.y
-	if global_position.distance_to(cible) > 0.01:
-		look_at(cible)
-	camera.rotation.x = 0
 
 
 # ---------- bateau ----------
 
 func _monter():
-	_mission_faite("bateau")
+	missions.valider("bateau")
 	dans_bateau = true
 	forme.disabled = true
 	velocity = Vector3.ZERO
@@ -213,112 +158,90 @@ func _monter():
 
 
 func _descendre(point: Vector3):
-	# le gouvernail a servi à piloter : sa position actuelle devient le nouveau milieu
 	milieu_gouvernail = SerialManager.gouvernail
 	dans_bateau = false
 	bateau.quitter_commandes()
 	global_position = point
 	forme.disabled = false
 	# on tourne le dos au bateau
-	_regarder_vers(point * 2 - bateau.global_position)
+	var cible = point * 2 - bateau.global_position
+	cible.y = global_position.y
+	look_at(cible)
 	camera.make_current()
 
 
 func _faire_le_plein():
-	inventaire.erase(OBJET_CARBURANT)
+	inventaire.erase("Jerrican")
 	_afficher_inventaire()
-	bateau.faire_le_plein()
-	Sons.jouer("essence_ramassee")
-	_mission_faite("plein")
+	bateau.carburant = Bateau.CARBURANT_MAX
+	Sons.jouer("SFX_Fuel_Collected")
+	missions.valider("plein")
 	_afficher_message("Le plein est fait ! Tu peux monter dans le bateau.")
 
 
-# Cherche un endroit pour descendre autour du bateau.
-# On essaie plusieurs directions, du plus près au plus loin.
-# Il faut de la terre hors de l'eau au bord et un peu plus loin,
-# sinon on tomberait dans l'eau ou dans un lagon.
-func _point_de_debarquement():
-	var distance := 1.0
-	while distance <= DISTANCE_DESCENDRE:
+# On cherche un endroit pour descendre tout autour du bateau.
+# Il faut de la terre au bord et encore 2 m plus loin, sinon on tombe à l'eau.
+func point_de_debarquement():
+	var distance = 1.0
+	while distance <= 6:
 		for i in 16:
-			var direction := Vector3.FORWARD.rotated(Vector3.UP, i * TAU / 16)
-			var bord = _sol_ile(bateau.global_position + direction * distance)
-			var plus_loin = _sol_ile(bateau.global_position + direction * (distance + RECUL_BORD))
+			var direction = Vector3.FORWARD.rotated(Vector3.UP, i * TAU / 16)
+			var bord = _sol(bateau.global_position + direction * distance)
+			var plus_loin = _sol(bateau.global_position + direction * (distance + 2))
 			if bord != null and plus_loin != null:
 				return plus_loin + Vector3.UP * 0.1
 		distance += 0.5
 	return null
 
 
-# Renvoie le sol d'une île à cet endroit, ou null s'il n'y a pas de terre
-func _sol_ile(point: Vector3):
-	var rayon := PhysicsRayQueryParameters3D.create(point + Vector3.UP * 30, point + Vector3.DOWN * 5)
+func peut_descendre() -> bool:
+	return point_de_debarquement() != null
+
+
+# renvoie le sol de l'île à cet endroit, ou null si c'est de l'eau
+func _sol(point: Vector3):
+	var rayon = PhysicsRayQueryParameters3D.create(point + Vector3.UP * 30, point + Vector3.DOWN * 5)
 	rayon.exclude = [bateau.get_rid(), get_rid()]
-	var touche := get_world_3d().direct_space_state.intersect_ray(rayon)
-	if touche.is_empty():
-		return null
-	if not touche.collider.is_in_group("iles"):
-		return null
-	if touche.position.y < HAUTEUR_TERRE:
+	var touche = get_world_3d().direct_space_state.intersect_ray(rayon)
+	if touche.is_empty() or not touche.collider.is_in_group("iles") or touche.position.y < 0.3:
 		return null
 	return touche.position
-
-
-# est-ce qu'on peut descendre du bateau ici ?
-func peut_descendre() -> bool:
-	return _point_de_debarquement() != null
-
-
-# prévient missions.gd qu'on vient de faire quelque chose
-func _mission_faite(id: String):
-	var missions = get_tree().get_first_node_in_group("missions")
-	if missions != null:
-		missions.valider(id)
 
 
 # ---------- coffres ----------
 
 func _coffre_proche():
 	var plus_proche = null
-	var meilleure_distance := DISTANCE_COFFRE
+	var meilleure_distance = 6.0
 	for coffre in get_tree().get_nodes_in_group("coffres"):
-		if coffre.ouvert:
-			continue
-		var distance := _distance_a_plat(coffre.global_position)
-		if distance < meilleure_distance:
-			meilleure_distance = distance
+		var ecart = coffre.global_position - global_position
+		ecart.y = 0
+		if not coffre.ouvert and ecart.length() < meilleure_distance:
+			meilleure_distance = ecart.length()
 			plus_proche = coffre
 	return plus_proche
 
 
 func _ouvrir(coffre):
-	var objet: String = coffre.ouvrir()
+	var objet = coffre.ouvrir()
 	if objet != "":
 		inventaire.append(objet)
 		_afficher_inventaire()
 		_afficher_message("Tu as trouvé : " + objet + " !")
-	# missions.gd s'occupe des répliques de Marcel et des coffres vides
-	var missions = get_tree().get_first_node_in_group("missions")
-	if missions != null:
-		missions.coffre_ouvert(objet)
+	missions.coffre_ouvert(objet)
 
 
 # ---------- vies et victoire ----------
 
-# cote : "gauche" ou "droite", pour faire vibrer le bon côté de la manette
-func perdre_vie(raison := "Le requin t'a mordu !", cote := "gauche"):
+func perdre_vie(raison: String, cote: String):
 	if cote == "gauche":
 		SerialManager.choc_gauche()
 	else:
 		SerialManager.choc_droit()
 
-	vies -= 1
-	if vies < 0:
-		vies = 0
+	vies = max(vies - 1, 0)
 	_afficher_vies()
-
 	if vies == 0:
-		# on attend un peu pour voir l'attaque avant le game over
 		await get_tree().create_timer(1.2).timeout
 		get_node("../Recommencer").game_over()
 	elif vies == 1:
@@ -329,59 +252,46 @@ func perdre_vie(raison := "Le requin t'a mordu !", cote := "gauche"):
 
 func _gagner():
 	a_gagne = true
-	Sons.couper_tout(get_tree())  # plus de moteur, de requins ni de musique pendant la fin
-	get_tree().get_first_node_in_group("missions").dissiper_brouillard()
+	Sons.couper_tout(get_tree())
+	missions.dissiper_brouillard()
 	aide.text = ""
-	inventaire.erase(OBJET_VICTOIRE)
+	inventaire.erase("Gilet jaune")
 	_afficher_inventaire()
 
-	var vue = await _filmer_statue_de_face()
-
-	# le gilet apparaît sur la statue en grandissant
-	gilet_statue.scale = Vector3.ONE * 0.01
-	gilet_statue.show()
-	var tween := create_tween()
-	tween.tween_property(gilet_statue, "scale", Vector3.ONE, 0.8).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	await tween.finished
-
-	await get_tree().create_timer(0.7).timeout
-	get_tree().get_first_node_in_group("missions").lancer_epilogue(vue)
-
-
-# Une nouvelle caméra part de nos yeux et va se placer devant la statue.
-# La statue regarde vers son axe Z.
-func _filmer_statue_de_face():
-	var vue := Camera3D.new()
+	# une caméra part de nos yeux et va devant la statue
+	var vue = Camera3D.new()
 	vue.fov = camera.fov
 	get_parent().add_child(vue)
 	vue.global_transform = camera.global_transform
 	vue.make_current()
-
-	var devant := statue.global_transform.basis.z
+	var devant = statue.global_basis.z
 	devant.y = 0
-	devant = devant.normalized()
-
-	var pied := statue.global_position
-	var position_finale := pied + devant * RECUL_VUE_STATUE + Vector3.UP * HAUTEUR_VUE_STATUE
-	var arrivee := Transform3D(Basis(), position_finale)
-	arrivee = arrivee.looking_at(pied + Vector3.UP * HAUTEUR_REGARD_STATUE)
-
-	var tween := create_tween()
-	tween.tween_property(vue, "global_transform", arrivee, DUREE_VOL_CAMERA).set_trans(Tween.TRANS_SINE)
+	var pied = statue.global_position
+	var arrivee = Transform3D(Basis(), pied + devant.normalized() * 26 + Vector3.UP * 9)
+	arrivee = arrivee.looking_at(pied + Vector3.UP * 11)
+	var tween = create_tween()
+	tween.tween_property(vue, "global_transform", arrivee, 2.5).set_trans(Tween.TRANS_SINE)
 	await tween.finished
-	return vue
+
+	# le gilet apparaît sur la statue
+	gilet_statue.scale = Vector3.ONE * 0.01
+	gilet_statue.show()
+	tween = create_tween()
+	tween.tween_property(gilet_statue, "scale", Vector3.ONE, 0.8).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	await tween.finished
+	await get_tree().create_timer(0.7).timeout
+	missions.lancer_epilogue(vue)
 
 
 # ---------- affichage ----------
 
-# pour que les autres objets (jerricans...) puissent afficher un message
 func annoncer(texte: String):
 	_afficher_message(texte)
 
 
 func _afficher_message(texte: String):
 	message.text = texte
-	temps_message = DUREE_MESSAGE
+	temps_message = 3.0
 
 
 func _afficher_inventaire():
@@ -396,8 +306,8 @@ func _afficher_vies():
 
 
 func _afficher_essence():
-	essence_texte.text = "Essence : " + str(ceili(bateau.carburant)) + " / " + str(int(Bateau.CARBURANT_MAX))
-	# presque vide : l'essence passe dans la couleur secondaire et clignote
+	essence_texte.text = "Essence : " + str(ceili(bateau.carburant)) + " / 100"
+	# presque plus d'essence : le texte clignote
 	if bateau.carburant < 25:
 		essence_texte.add_theme_color_override("font_color", Couleurs.SECONDAIRE)
 		essence_texte.modulate.a = 0.4 + 0.6 * abs(sin(Time.get_ticks_msec() / 150.0))
@@ -407,10 +317,10 @@ func _afficher_essence():
 
 
 func _creer_interface():
-	var calque := CanvasLayer.new()
+	var calque = CanvasLayer.new()
 	add_child(calque)
 
-	var viseur := _creer_texte(calque, 32, Color.WHITE)
+	var viseur = _creer_texte(calque, 32, Color.WHITE)
 	viseur.text = "+"
 	viseur.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	viseur.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -430,10 +340,8 @@ func _creer_interface():
 
 	inventaire_texte = _creer_texte(calque, 32, Color.WHITE)
 	inventaire_texte.position = Vector2(30, 20)
-
 	vies_texte = _creer_texte(calque, 32, Couleurs.IMPORTANTE)
 	vies_texte.position = Vector2(30, 65)
-
 	essence_texte = _creer_texte(calque, 32, Couleurs.IMPORTANTE)
 	essence_texte.position = Vector2(30, 110)
 
@@ -441,8 +349,8 @@ func _creer_interface():
 	_afficher_vies()
 
 
-func _creer_texte(calque: CanvasLayer, taille: int, couleur: Color) -> Label:
-	var texte := Label.new()
+func _creer_texte(calque, taille, couleur) -> Label:
+	var texte = Label.new()
 	texte.add_theme_font_size_override("font_size", taille)
 	texte.add_theme_color_override("font_color", couleur)
 	texte.add_theme_color_override("font_outline_color", Couleurs.FONCEE)

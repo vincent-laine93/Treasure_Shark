@@ -4,78 +4,43 @@ extends CharacterBody3D
 const VITESSE_MAX := 15.0
 const VITESSE_RECUL := 3.0
 const ACCELERATION := 3.0
-const RALENTISSEMENT := 2.0  # le bateau ralentit tout seul quand on lâche
+const RALENTISSEMENT := 2.0
 const VITESSE_ROTATION := 5
-
-# le volant tourne comme le gouvernail de la manette (ou les flèches)
-const ANGLE_VOLANT := 120.0  # en degrés, quand on tourne à fond
-const VITESSE_VOLANT := 4.0  # avec les flèches le volant met 1/4 s pour aller au bout
-const ANGLE_LEVIER := 30.0  # en degrés : poussé à fond en avant, tiré à fond en marche arrière
-
-# chocs contre les rochers
-const VITESSE_CHOC := 2.0  # en dessous on ne perd pas de vie
-const DELAI_CHOC := 2.0
-const RECUL_CHOC := 2.0
-
-# essence
 const CARBURANT_MAX := 100.0
-const CONSOMMATION := 1.0  # par seconde à fond : un plein dure 100 s de gaz
-
-# caméra du pilote
-const CAMERA_POSITION := Vector3(0, 1.6, 1.2)
-const CAMERA_INCLINAISON := -6.0
-const CAMERA_CHAMP := 80.0
 
 @export var carburant := 0.0  # le bateau commence à sec
 
 var vitesse := 0.0
 var pilote_actif := false
-var en_attente := false  # Marcel parle avant le départ : moteur coupé, commandes bloquées
-var recharge_choc := 0.0
-var essence_envoyee := -1  # dernière valeur envoyée à la jauge de la manette
+var en_attente := false  # pendant que Marcel parle au départ
+var temps_avant_choc := 0.0
+var essence_envoyee := -1
 var temps_partie := 0.0
-var position_volant := 0.0  # de -1 (à fond à droite) à 1 (à fond à gauche)
+var position_volant := 0.0
 var sens_volant := 1.0
+var angle_levier := 0.0
 
-@onready var camera: Camera3D = $CameraPilote
-@onready var materiau_eau: ShaderMaterial = get_node("../Ocean").get_surface_override_material(0)
-@onready var volant: Node3D = find_child("Volant", true, false)
-@onready var levier: Node3D = find_child("Levier", true, false)
-@onready var angle_levier_repos: float = levier.rotation.z if levier != null else 0.0
+@onready var camera = $CameraPilote
+@onready var eau: ShaderMaterial = get_node("../Ocean").get_surface_override_material(0)
+@onready var volant = find_child("Volant", true, false)
+@onready var levier = find_child("Levier", true, false)
 
 
 func _ready():
-	# pas de gravité pour un bateau
-	motion_mode = MOTION_MODE_FLOATING
+	motion_mode = MOTION_MODE_FLOATING  # pas de gravité
 	creer_touches()
-	camera.position = CAMERA_POSITION
-	camera.rotation_degrees = Vector3(CAMERA_INCLINAISON, 0, 0)
-	camera.fov = CAMERA_CHAMP
+	camera.position = Vector3(0, 1.6, 1.2)
+	camera.rotation_degrees = Vector3(-6, 0, 0)
+	camera.fov = 80
 	camera.near = 0.05
-	# le volant tourne autour de son axe Z : on regarde si cet axe pointe vers le pilote
-	# (vers +Z du bateau) pour qu'il tourne à gauche quand on va à gauche
-	if volant != null and volant.global_basis.z.dot(global_basis.z) < 0:
+	angle_levier = levier.rotation.z
+	# le volant est peut-être monté à l'envers dans le modèle
+	if volant.global_basis.z.dot(global_basis.z) < 0:
 		sens_volant = -1.0
-
-
-func faire_le_plein():
-	carburant = CARBURANT_MAX
-
-
-# la jauge de la manette suit l'essence (on n'envoie que quand le chiffre change)
-func _envoyer_essence():
-	# au début on laisse 1 s à la manette pour remettre sa jauge à zéro (commande Z)
-	if temps_partie < 1.0:
-		return
-	var pourcentage := ceili(carburant / CARBURANT_MAX * 100)
-	if pourcentage != essence_envoyee:
-		essence_envoyee = pourcentage
-		SerialManager.envoyer_essence(pourcentage)
 
 
 func prendre_commandes():
 	pilote_actif = true
-	camera.rotation_degrees = Vector3(CAMERA_INCLINAISON, 0, 0)
 	camera.make_current()
 
 
@@ -85,33 +50,39 @@ func quitter_commandes():
 
 
 func _physics_process(delta):
-	recharge_choc -= delta
+	temps_avant_choc -= delta
 	temps_partie += delta
 
-	var gaz := 0.0
-	var direction := 0.0
+	var gaz = 0.0
+	var direction = 0.0
 	if pilote_actif and not en_attente:
 		gaz = Input.get_axis("reculer", "avancer")
 		direction = Input.get_axis("droite", "gauche")
-		# avec la manette : glissière pour la vitesse, gouvernail pour tourner
+		# avec la manette : la glissière pour la vitesse et le gouvernail pour tourner
 		if SerialManager.avance() != 0:
 			gaz = SerialManager.avance()
 		if SerialManager.virage() != 0:
 			direction = -SerialManager.virage()
 
-	_tourner_volant(direction, delta)
-	_bouger_levier()
+	# le volant tourne avec le gouvernail
+	position_volant = move_toward(position_volant, direction, 4 * delta)
+	if SerialManager.manette_active and pilote_actif:
+		position_volant = direction
+	volant.rotation.z = deg_to_rad(120) * position_volant * sens_volant
 
-	# plus d'essence = plus de moteur
+	# le levier suit la vitesse du bateau
+	if vitesse >= 0:
+		levier.rotation.z = angle_levier + deg_to_rad(30) * vitesse / VITESSE_MAX
+	else:
+		levier.rotation.z = angle_levier + deg_to_rad(30) * vitesse / VITESSE_RECUL
+
+	# essence
 	if carburant <= 0:
 		gaz = 0.0
-	carburant -= abs(gaz) * CONSOMMATION * delta
-	if carburant < 0:
-		carburant = 0.0
+	carburant = max(carburant - abs(gaz) * delta, 0.0)
 	_envoyer_essence()
 
-	# Avancer / reculer
-	# gaz va de -1 à 1 : au clavier c'est tout ou rien, avec la glissière on peut aller moins vite
+	# avancer / reculer
 	if gaz > 0:
 		vitesse = move_toward(vitesse, gaz * VITESSE_MAX, ACCELERATION * delta)
 	elif gaz < 0:
@@ -119,81 +90,63 @@ func _physics_process(delta):
 	else:
 		vitesse = move_toward(vitesse, 0.0, RALENTISSEMENT * delta)
 
-	# Tourner (seulement si le bateau bouge, comme un vrai bateau)
+	# on ne peut tourner que si le bateau avance
 	if abs(vitesse) > 0.2:
 		var force = clamp(abs(vitesse) / 3.0, 0.3, 1.0)
 		rotate_y(direction * VITESSE_ROTATION * force * sign(vitesse) * delta)
 
-	# Déplacement
 	velocity = -transform.basis.z * vitesse
-	velocity.y = 0.0
 	move_and_slide()
-	# le bateau reste toujours sur l'eau : sinon en frottant le fond d'une île il glisse vers le haut
-	global_position.y = 0.0
+	global_position.y = 0.0  # le bateau reste sur l'eau
 
-	# on dit à l'eau où est le bateau (eau calme autour et pas d'eau dans la coque)
-	var avant := -transform.basis.z
-	materiau_eau.set_shader_parameter("position_bateau", global_position)
-	materiau_eau.set_shader_parameter("avant_bateau", Vector2(avant.x, avant.z).normalized())
+	# l'eau a besoin de savoir où est le bateau (pour ne pas passer dans la coque)
+	var avant = -transform.basis.z
+	eau.set_shader_parameter("position_bateau", global_position)
+	eau.set_shader_parameter("avant_bateau", Vector2(avant.x, avant.z).normalized())
 
-	# Obstacles : on s'arrête si on fonce dedans, sinon on glisse le long
-	var sens_marche := -transform.basis.z * signf(vitesse)
+	# si on fonce dans quelque chose on s'arrête, sinon on glisse le long
 	for i in get_slide_collision_count():
-		var collision := get_slide_collision(i)
+		var collision = get_slide_collision(i)
 		if collision.get_collider().is_in_group("rochers"):
 			_choc_rocher(collision.get_position())
 			break
-		if sens_marche.dot(collision.get_normal()) < -0.7:
+		if (-transform.basis.z * sign(vitesse)).dot(collision.get_normal()) < -0.7:
 			vitesse = 0.0
 			break
 		vitesse *= 0.98
 
 
-# avec la manette le volant suit exactement le gouvernail,
-# avec les flèches il tourne petit à petit et revient au milieu quand on lâche
-func _tourner_volant(direction: float, delta: float):
-	if volant == null:
+# la jauge de la manette (on attend 1 s au début, le temps que la manette se remette à zéro)
+func _envoyer_essence():
+	if temps_partie < 1.0:
 		return
-	position_volant = move_toward(position_volant, direction, VITESSE_VOLANT * delta)
-	if SerialManager.manette_active and pilote_actif:
-		position_volant = direction
-	volant.rotation.z = deg_to_rad(ANGLE_VOLANT) * position_volant * sens_volant
+	var pourcentage = ceili(carburant)
+	if pourcentage != essence_envoyee:
+		essence_envoyee = pourcentage
+		SerialManager.envoyer_essence(pourcentage)
 
 
-# la manette des gaz suit la vitesse du bateau : levée quand on avance,
-# au milieu à l'arrêt, en arrière quand on recule
-func _bouger_levier():
-	if levier == null:
-		return
-	var position_levier := vitesse / VITESSE_MAX
-	if vitesse < 0:
-		position_levier = vitesse / VITESSE_RECUL
-	levier.rotation.z = angle_levier_repos + deg_to_rad(ANGLE_LEVIER) * position_levier
-
-
-func _choc_rocher(point_choc: Vector3):
-	if abs(vitesse) < VITESSE_CHOC:
+func _choc_rocher(point: Vector3):
+	if abs(vitesse) < 2:
 		vitesse = 0.0
 		return
-	if pilote_actif and recharge_choc <= 0:
-		recharge_choc = DELAI_CHOC
-		# le bateau regarde vers -Z, donc x négatif = côté gauche
-		var cote := "droite"
-		if to_local(point_choc).x < 0:
+	if pilote_actif and temps_avant_choc <= 0:
+		temps_avant_choc = 2.0
+		var cote = "droite"
+		if to_local(point).x < 0:
 			cote = "gauche"
-		Sons.jouer("choc_rocher")
-		get_tree().get_first_node_in_group("joueur").perdre_vie("Ton bateau a heurté un rocher !", cote)
+		Sons.jouer("SFX_Shark_Attack")
+		get_node("../Joueur").perdre_vie("Ton bateau a heurté un rocher !", cote)
 	# le bateau rebondit en arrière
-	vitesse = -signf(vitesse) * RECUL_CHOC
+	vitesse = -sign(vitesse) * 2
 
 
-# Crée les touches si elles n'existent pas déjà
 # ZQSD ou flèches pour bouger, E pour interagir, Espace pour sauter
 static func creer_touches():
-	var touches := {
-		"avancer": [KEY_W, KEY_UP],  # KEY_W = touche Z sur un clavier AZERTY
+	var touches = {
+		"avancer": [KEY_W, KEY_UP],
 		"reculer": [KEY_S, KEY_DOWN],
-		"gauche": [KEY_A, KEY_LEFT],  # KEY_A = touche Q sur un clavier AZERTY
+		"gauche": [KEY_A, KEY_LEFT],
 		"droite": [KEY_D, KEY_RIGHT],
 		"interagir": [KEY_E],
 		"sauter": [KEY_SPACE],
@@ -202,7 +155,7 @@ static func creer_touches():
 		if InputMap.has_action(action):
 			continue
 		InputMap.add_action(action)
-		for code in touches[action]:
-			var evenement := InputEventKey.new()
-			evenement.physical_keycode = code
+		for touche in touches[action]:
+			var evenement = InputEventKey.new()
+			evenement.physical_keycode = touche
 			InputMap.action_add_event(action, evenement)

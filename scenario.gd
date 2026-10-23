@@ -1,13 +1,8 @@
 class_name Scenario
 
-# Tous les textes du jeu (script de Treasure Shark).
-# Pour changer l'histoire, il suffit de modifier ce fichier.
-#
-# Une réplique = ["Nom du personnage", "Texte affiché en sous-titre"]
-# Avec la voix, on ajoute le fichier son en 3e :
-#   ["Marcel", "Je m'appelle Marcel.", "res://voix/marcel_1.wav"]
-# Si un enregistrement continue sur les répliques suivantes, elles ont "" en 3e
-# (le temps du son est partagé entre elles selon la longueur du texte).
+# Tous les textes du jeu.
+# Une réplique = ["Nom", "Texte", "fichier de la voix"]
+# Si la voix continue sur la réplique d'après, on met "" à la place du fichier.
 
 
 # ---------- Scène 1 : l'île de la Débrouille ----------

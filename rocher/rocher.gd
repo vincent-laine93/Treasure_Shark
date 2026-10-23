@@ -1,8 +1,7 @@
 extends StaticBody3D
 
 # Un rocher dans l'eau.
-# Au lancement on remplace sa texture par roche.gdshader
-# pour que tous les rochers aient la même couleur.
+# On remplace sa texture par roche.gdshader pour que tous les rochers aient la même couleur.
 
 const SHADER := preload("res://rocher/roche.gdshader")
 
@@ -10,8 +9,7 @@ const SHADER := preload("res://rocher/roche.gdshader")
 
 
 func _ready():
-	add_to_group("rochers")  # le bateau perd une vie s'il tape dedans
-	Sons.ajouter_proximite(self, "rochers")  # les vagues qui se cassent dessus
+	add_to_group("rochers")
 	for maillage in find_children("*", "MeshInstance3D", true, false):
 		for i in maillage.mesh.get_surface_count():
 			var ancien = maillage.get_active_material(i)

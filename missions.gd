@@ -1,42 +1,33 @@
 extends Node
 
-# Le déroulement de la partie, en suivant le script (les textes sont dans scenario.gd) :
-# l'intro, les missions dans l'ordre, les répliques de Marcel,
-# le game over "panne sèche" et la fin.
-# La mission en cours est affichée en haut à droite.
+# Le déroulement de la partie : l'intro, les missions dans l'ordre,
+# ce que dit Marcel, la panne d'essence et la fin.
+# Les textes sont dans scenario.gd.
 
-const DISTANCE_SORTIE_CABANE := 6.0
-const DISTANCE_ARRIVEE_STATUE := 40.0
-const DISTANCE_MARCHE_STATUE := 30.0
-const ESSENCE_BASSE := 25.0
-const BROUILLARD := 0.004
-const DUREE_DISSIPATION := 5.0  # le brouillard disparaît pendant le vol de la caméra vers la statue
-const VITESSE_ECRITURE := 0.045  # secondes par lettre, pour le texte de l'intro
-
-var numero := 0  # mission en cours
+var numero := 0  # numéro de la mission en cours
 var temps_de_jeu := 0.0
 var en_intro := false
-var ecran_noir := true  # pendant l'écran noir du début, aucun son (sons.gd attend la fin)
-var depart_en_cours := false  # Marcel parle en montant dans le bateau : on ne bouge pas, rien autour
+var ecran_noir := true
+var depart_en_cours := false
 var partie_finie := false
 var gilet_trouve := false
 var coffres_vides := 0
 var jerrican_dit := false
 var essence_basse_dite := false
 var marche_dite := false
-var vue_fin: Camera3D  # caméra de l'épilogue
+var vue_fin: Camera3D
+var machine_a_ecrire: FmodEvent
 
 var objectif: Label
 var intro: ColorRect
 var intro_texte: Label
 var passer: Label
-var machine_a_ecrire: FmodEvent  # bruit de machine à écrire pendant que le texte s'écrit sur l'écran noir
 var sous_titres
 
 @onready var joueur = get_node("../Joueur")
 @onready var bateau = get_node("../Bateau")
-@onready var cabane: Node3D = get_node("../Cabane")
-@onready var statue: Node3D = get_node("../Ocean/IleStatue/StatueLiberte")
+@onready var cabane = get_node("../Cabane")
+@onready var statue = get_node("../Ocean/IleStatue/StatueLiberte")
 @onready var recommencer = get_node("../Recommencer")
 @onready var environnement: Environment = get_node("../WorldEnvironment").environment
 
@@ -47,16 +38,13 @@ func _ready():
 	add_child(sous_titres)
 	_creer_interface()
 
-	# chaque partie a sa propre copie de l'environnement : sinon la fin (brouillard dissipé)
-	# resterait en mémoire et on rejouerait sans brume
+	# on copie l'environnement sinon quand on rejoue il n'y a plus de brouillard
 	environnement = environnement.duplicate()
 	get_node("../WorldEnvironment").environment = environnement
-
-	# ambiance grise et brumeuse
 	environnement.fog_enabled = true
 	environnement.fog_light_color = Color(0.62, 0.66, 0.7)
-	environnement.fog_density = BROUILLARD
-	environnement.fog_sky_affect = 0.0  # le brouillard reste sur la mer, on garde le ciel
+	environnement.fog_density = 0.004
+	environnement.fog_sky_affect = 0.0
 
 	_afficher_objectif()
 	_jouer_intro()
@@ -65,30 +53,28 @@ func _ready():
 func _process(delta):
 	if vue_fin != null:
 		vue_fin.look_at(statue.global_position + Vector3.UP * 11)
-
-	if en_intro:
-		return
-	if partie_finie:
+	if en_intro or partie_finie:
 		return
 
 	temps_de_jeu += delta
-	var mission := mission_en_cours()
+	var mission = mission_en_cours()
 
-	if mission == "sortir" and joueur.global_position.distance_to(cabane.global_position) > DISTANCE_SORTIE_CABANE:
+	if mission == "sortir" and joueur.global_position.distance_to(cabane.global_position) > 6:
 		valider("sortir")
 
-	# le moteur cale pile quand le bateau arrive contre l'île de la statue
-	if mission == "statue" and joueur.dans_bateau and _distance_statue() < DISTANCE_ARRIVEE_STATUE:
-		if joueur.peut_descendre():
-			valider("statue")
-			bateau.carburant = 0.0
-			sous_titres.dire(Scenario.ARRIVEE_STATUE)
+	# arrivé à l'île de la statue, le moteur cale
+	if mission == "statue" and joueur.dans_bateau and distance_statue(joueur) < 40 and joueur.peut_descendre():
+		valider("statue")
+		bateau.carburant = 0.0
+		if gilet_trouve:
+			Sons.jouer("SFX_Victory")
+		sous_titres.dire(Scenario.ARRIVEE_STATUE)
 
-	if mission == "poser" and not joueur.dans_bateau and not marche_dite and _distance_statue() < DISTANCE_MARCHE_STATUE:
+	if mission == "poser" and not joueur.dans_bateau and not marche_dite and distance_statue(joueur) < 30:
 		marche_dite = true
 		sous_titres.dire(Scenario.MARCHE_STATUE)
 
-	_surveiller_essence()
+	_verifier_essence()
 
 
 func mission_en_cours() -> String:
@@ -106,8 +92,7 @@ func valider(id: String):
 		_depart_bateau()
 
 
-# La première fois qu'on monte dans le bateau : Marcel parle seul (sons.gd coupe tout le reste),
-# on ne peut pas bouger, puis les bruits reviennent, le moteur démarre et on peut partir.
+# la première fois qu'on monte dans le bateau, Marcel parle et on ne peut pas bouger
 func _depart_bateau():
 	depart_en_cours = true
 	joueur.bloque = true
@@ -126,25 +111,23 @@ func _afficher_objectif():
 		objectif.text = "Mission : " + Scenario.MISSIONS[numero]["objectif"]
 
 
-func _distance_statue() -> float:
-	var ecart: Vector3 = statue.global_position - joueur.global_position
+# distance sans compter la hauteur
+func distance_statue(objet) -> float:
+	var ecart = statue.global_position - objet.global_position
 	ecart.y = 0
 	return ecart.length()
 
 
-# ---------- appelé par le joueur et les objets ----------
-
 func coffre_ouvert(objet: String):
-	if objet == joueur.OBJET_CARBURANT:
+	if objet == "Jerrican":
 		valider("jerrican")
-	elif objet == joueur.OBJET_VICTOIRE:
+	elif objet == "Gilet jaune":
 		gilet_trouve = true
 		sous_titres.dire(Scenario.GILET)
 		valider("gilet")
 	elif gilet_trouve:
 		joueur.annoncer("Le coffre est vide...")
 	else:
-		# les coffres vides ont leur réplique dans l'ordre où on les ouvre
 		coffres_vides += 1
 		if coffres_vides == 1:
 			joueur.annoncer("Tu as trouvé : " + Scenario.OBJET_COFFRE_1)
@@ -162,43 +145,32 @@ func jerrican_ramasse():
 		sous_titres.dire(Scenario.JERRICAN)
 
 
-# ---------- essence ----------
-
-# la panne ne compte que sur l'eau : à pied ou arrivé à l'île de la statue,
-# pas de réplique "essence basse" ni de game over
-func _surveiller_essence():
-	if not joueur.dans_bateau:
-		return
-	var ecart: Vector3 = statue.global_position - bateau.global_position
-	ecart.y = 0
-	if ecart.length() < DISTANCE_ARRIVEE_STATUE:
+# l'essence ne compte que quand on est en bateau et pas encore à la statue
+func _verifier_essence():
+	if not joueur.dans_bateau or distance_statue(bateau) < 40:
 		return
 
-	if bateau.carburant < ESSENCE_BASSE and not essence_basse_dite:
+	if bateau.carburant < 25 and not essence_basse_dite:
 		essence_basse_dite = true
 		sous_titres.dire(Scenario.ESSENCE_BASSE)
-	if bateau.carburant > ESSENCE_BASSE * 2:
+	if bateau.carburant > 50:
 		essence_basse_dite = false
 
-	# plus d'essence en pleine mer = game over
 	if bateau.carburant <= 0 and mission_en_cours() != "poser":
-		_game_over_panne()
+		_panne_seche()
 
 
-func _game_over_panne():
+func _panne_seche():
 	partie_finie = true
 	joueur.bloque = true
 	sous_titres.dire(Scenario.GAME_OVER_PANNE, true)
-	# Marcel dérive seul dans le brouillard
-	var tween := create_tween()
-	tween.tween_property(environnement, "fog_density", BROUILLARD * 6, 4.0)
+	var tween = create_tween()
+	tween.tween_property(environnement, "fog_density", 0.024, 4.0)
 	await sous_titres.fini
 	recommencer.game_over(Scenario.TEXTE_GAME_OVER_PANNE, "")
 
 
 # ---------- intro ----------
-# scène 1 : écran noir avec le texte tapé à la machine, puis la voix off de Marcel.
-# Le joueur ne peut pas bouger avant la fin (E pour passer).
 
 func _jouer_intro():
 	en_intro = true
@@ -207,17 +179,18 @@ func _jouer_intro():
 	passer.show()
 	intro_texte.visible_characters = 0
 
-	machine_a_ecrire = FmodServer.create_event_instance_with_guid(Sons.EVENEMENTS["machine_a_ecrire"][1])
+	# le texte s'écrit lettre par lettre avec le bruit de machine à écrire
+	machine_a_ecrire = Sons.creer("SFX_Writing_Machine")
 	machine_a_ecrire.start()
 	while en_intro and intro_texte.visible_characters < Scenario.INTRO_TEXTE.length():
 		intro_texte.visible_characters += 1
-		await get_tree().create_timer(VITESSE_ECRITURE).timeout
+		await get_tree().create_timer(0.045).timeout
 	_arreter_machine_a_ecrire()
 
 	if en_intro:
 		await get_tree().create_timer(2.5).timeout
 	if en_intro:
-		var tween := create_tween()
+		var tween = create_tween()
 		tween.tween_property(intro, "modulate:a", 0.0, 1.5)
 		await tween.finished
 		intro.hide()
@@ -229,13 +202,13 @@ func _jouer_intro():
 
 
 func _arreter_machine_a_ecrire():
-	if machine_a_ecrire == null:
-		return
-	machine_a_ecrire.stop(FmodServer.FMOD_STUDIO_STOP_ALLOWFADEOUT)
-	machine_a_ecrire.release()
-	machine_a_ecrire = null
+	if machine_a_ecrire != null:
+		machine_a_ecrire.stop(FmodServer.FMOD_STUDIO_STOP_ALLOWFADEOUT)
+		machine_a_ecrire.release()
+		machine_a_ecrire = null
 
 
+# E pour passer l'intro
 func _input(event):
 	if en_intro and event.is_action_pressed("interagir"):
 		_fin_intro()
@@ -246,59 +219,54 @@ func _fin_intro():
 		return
 	en_intro = false
 	ecran_noir = false
-	_arreter_machine_a_ecrire()  # si on passe l'intro avec E pendant que ça écrit
+	_arreter_machine_a_ecrire()
 	joueur.bloque = false
 	intro.hide()
 	passer.hide()
 	if sous_titres.est_en_train_de_parler():
-		sous_titres.dire([], true)  # on coupe la voix off si on a passé l'intro
+		sous_titres.dire([], true)
 
 
 # ---------- fin ----------
 
-# appelé dès qu'on pose le gilet, au début de la cinématique de fin :
-# les deux brouillards (le simple et le volumétrique) s'en vont petit à petit
 func dissiper_brouillard():
-	var tween := create_tween().set_parallel()
-	tween.tween_property(environnement, "fog_density", 0.0, DUREE_DISSIPATION)
-	tween.tween_property(environnement, "volumetric_fog_density", 0.0, DUREE_DISSIPATION)
+	var tween = create_tween().set_parallel()
+	tween.tween_property(environnement, "fog_density", 0.0, 5.0)
+	tween.tween_property(environnement, "volumetric_fog_density", 0.0, 5.0)
 	await tween.finished
 	environnement.fog_enabled = false
 	environnement.volumetric_fog_enabled = false
 
 
-# appelé quand le gilet est sur la statue
 func lancer_epilogue(vue: Camera3D):
 	valider("poser")
 	partie_finie = true
 	vue_fin = vue
 
-	# une lumière jaune s'allume sur la statue (la brume part déjà, voir dissiper_brouillard)
-	var lumiere := OmniLight3D.new()
+	# une lumière jaune s'allume sur la statue
+	var lumiere = OmniLight3D.new()
 	lumiere.light_color = Couleurs.IMPORTANTE
 	lumiere.omni_range = 60
 	lumiere.light_energy = 0
 	statue.add_child(lumiere)
 	lumiere.position = Vector3(0, 14, 0)
-	var tween := create_tween()
-	tween.tween_property(lumiere, "light_energy", 6.0, 3.0)
+	create_tween().tween_property(lumiere, "light_energy", 6.0, 3.0)
 
-	# la caméra recule lentement
-	var arrivee := vue.global_position + vue.global_transform.basis.z * 45 + Vector3.UP * 12
-	var recul := create_tween()
-	recul.tween_property(vue, "global_position", arrivee, 30.0).set_trans(Tween.TRANS_SINE)
+	# la caméra recule doucement
+	var arrivee = vue.global_position + vue.global_transform.basis.z * 45 + Vector3.UP * 12
+	create_tween().tween_property(vue, "global_position", arrivee, 30.0).set_trans(Tween.TRANS_SINE)
 
 	sous_titres.dire(Scenario.EPILOGUE, true)
 	await sous_titres.fini
-	var minutes := int(temps_de_jeu) / 60
-	var secondes := int(temps_de_jeu) % 60
+	var minutes = int(temps_de_jeu) / 60
+	var secondes = int(temps_de_jeu) % 60
 	recommencer.fin(Scenario.TEXTE_FIN, "Temps de jeu : %d min %02d s" % [minutes, secondes])
 
 
 # ---------- affichage ----------
 
 func _creer_interface():
-	var calque := CanvasLayer.new()
+	var calque = CanvasLayer.new()
 	add_child(calque)
 	objectif = Label.new()
 	objectif.add_theme_font_size_override("font_size", 32)
@@ -312,14 +280,15 @@ func _creer_interface():
 	objectif.offset_top = 20
 	calque.add_child(objectif)
 
-	# écran noir de l'intro, par-dessus tout le reste
-	var calque_intro := CanvasLayer.new()
+	# l'écran noir du début
+	var calque_intro = CanvasLayer.new()
 	calque_intro.layer = 20
 	add_child(calque_intro)
 	intro = ColorRect.new()
 	intro.color = Color.BLACK
 	intro.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	calque_intro.add_child(intro)
+
 	intro_texte = Label.new()
 	intro_texte.text = Scenario.INTRO_TEXTE
 	intro_texte.add_theme_font_size_override("font_size", 48)
@@ -328,6 +297,7 @@ func _creer_interface():
 	intro_texte.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	intro_texte.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	intro.add_child(intro_texte)
+
 	passer = Label.new()
 	passer.text = "E : passer"
 	passer.add_theme_font_size_override("font_size", 24)
