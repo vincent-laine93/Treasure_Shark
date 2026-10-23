@@ -13,8 +13,16 @@ func _ready():
 		if not ile.visible:
 			continue
 		for objet in ile.find_children("*", "MeshInstance3D", true, false):
-			if _est_solide(objet.name):
+			if _flotte(objet.name):
+				objet.queue_free()
+			elif _est_solide(objet.name):
 				_ajouter_collision(objet)
+
+
+# les deux coffres en bois de l'île sud-est qui flottent au-dessus de l'eau
+func _flotte(nom: String) -> bool:
+	nom = nom.replace("_", "").replace(".", "")
+	return "legno" in nom and (nom.begins_with("Cube000") or nom.begins_with("Cube001"))
 
 
 func _est_solide(nom: String) -> bool:
